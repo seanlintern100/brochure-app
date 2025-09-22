@@ -99,7 +99,6 @@ class OverlayManager {
     static setImageOverlay(pageId, selector, src) {
         const overlay = this.getOverlay(pageId);
         overlay.images[selector] = src;
-        console.log('🖼️ Image overlay set:', { pageId, selector, src });
         this.notifyChange(pageId, 'images', selector, src);
     }
 
@@ -109,7 +108,6 @@ class OverlayManager {
     static setContainerOverlay(pageId, selector, properties) {
         const overlay = this.getOverlay(pageId);
         overlay.containers[selector] = { ...overlay.containers[selector], ...properties };
-        console.log('📦 Container overlay set:', { pageId, selector, properties });
         this.notifyChange(pageId, 'containers', selector, properties);
     }
 
@@ -119,7 +117,6 @@ class OverlayManager {
     static setSectionOverlay(pageId, selector, properties) {
         const overlay = this.getOverlay(pageId);
         overlay.sections[selector] = { ...overlay.sections[selector], ...properties };
-        console.log('📏 Section overlay set:', { pageId, selector, properties });
         this.notifyChange(pageId, 'sections', selector, properties);
     }
 

@@ -86,7 +86,6 @@ class PreviewRenderer {
                     }
                     element.setAttribute('data-overlay-image', 'true');
                 });
-                console.log('🖼️ Applied image overlay:', selector, '→', src);
             } catch (error) {
                 console.warn('⚠️ Failed to apply image overlay:', selector, error);
             }
@@ -106,7 +105,6 @@ class PreviewRenderer {
                     });
                     element.setAttribute('data-overlay-container', 'true');
                 });
-                console.log('📦 Applied container overlay:', selector, '→', properties);
             } catch (error) {
                 console.warn('⚠️ Failed to apply container overlay:', selector, error);
             }
@@ -126,7 +124,6 @@ class PreviewRenderer {
                     });
                     element.setAttribute('data-overlay-section', 'true');
                 });
-                console.log('📏 Applied section overlay:', selector, '→', properties);
             } catch (error) {
                 console.warn('⚠️ Failed to apply section overlay:', selector, error);
             }

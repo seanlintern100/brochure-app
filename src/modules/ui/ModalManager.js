@@ -231,7 +231,6 @@ class ModalManager {
                             if (transform.src && transform.src !== img.src) {
                                 img.src = transform.src;
                                 img.setAttribute('src', transform.src); // Ensure it persists in innerHTML
-                                console.log(`🖼️ Applied image src: ${transform.src} to element ${elementId}`);
                             }
 
                             // Apply direct transform for immediate effect

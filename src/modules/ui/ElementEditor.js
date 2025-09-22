@@ -567,17 +567,11 @@ class ElementEditor {
         }
 
         if (img) {
-            console.log('🖼️ DEBUG: Before image replacement - img.src:', img.src);
-            console.log('🖼️ DEBUG: Before image replacement - img.getAttribute("src"):', img.getAttribute('src'));
-            console.log('🖼️ DEBUG: Replacing with newImageUrl:', newImageUrl);
 
             img.src = newImageUrl;
             // CRITICAL: Also set the src attribute so it persists in innerHTML
             img.setAttribute('src', newImageUrl);
 
-            console.log('🖼️ DEBUG: After replacement - img.src:', img.src);
-            console.log('🖼️ DEBUG: After replacement - img.getAttribute("src"):', img.getAttribute('src'));
-            console.log('🖼️ DEBUG: Element ID:', img.closest('[data-element-id]')?.dataset.elementId || 'NO ID');
 
             ErrorHandler.showSuccess('Image replaced successfully');
             this.triggerSave();
@@ -1094,7 +1088,7 @@ class ElementEditor {
 
             // Debug: Check if image sources are in the HTML
             const imgSrcMatches = modifiedHTML.match(/src="[^"]*"/g);
-            console.log(`🖼️ Found ${imgSrcMatches ? imgSrcMatches.length : 0} image src attributes in saved HTML:`, imgSrcMatches);
+            console.log(`🖼️ Found ${imgSrcMatches ? imgSrcMatches.length : 0} image src attributes in saved HTML`);
 
             console.log(`💾 Original HTML length: ${originalHTML.length}, Modified HTML length: ${modifiedHTML.length}`);
 

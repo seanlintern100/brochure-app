@@ -20,8 +20,25 @@ class TextEditor {
      */
     static init() {
         console.log('📝 TextEditor initialized');
+        this.currentMode = 'text'; // text | images | containers
+        this.currentPageId = null;
+        this.selectedElement = null;
         this.setupEventListeners();
         this.createEditingPanel();
+    }
+
+    /**
+     * Set the current editing mode
+     */
+    static setMode(mode) {
+        console.log('📝 TextEditor mode changing from', this.currentMode, 'to', mode);
+        this.currentMode = mode;
+
+        // Clear any existing selection when mode changes
+        if (this.selectedElement) {
+            this.hideEditingPanel();
+            this.selectedElement = null;
+        }
     }
 
     static setupEventListeners() {
@@ -277,29 +294,9 @@ class TextEditor {
             }
         }
 
-        // LOG: Analyze the image and container situation
-        console.log('🔍 IMAGE SELECTION ANALYSIS:');
-        console.log('  Image element:', element);
-        console.log('  Image natural size:', element.naturalWidth, 'x', element.naturalHeight);
-        console.log('  Image display size:', element.offsetWidth, 'x', element.offsetHeight);
-        console.log('  Image computed style:', {
-            position: getComputedStyle(element).position,
-            width: getComputedStyle(element).width,
-            height: getComputedStyle(element).height,
-            objectFit: getComputedStyle(element).objectFit,
-            maxWidth: getComputedStyle(element).maxWidth
-        });
-
         // Check for container
         const container = element.closest('footer, header, section, div');
         if (container) {
-            console.log('  Container found:', container.tagName);
-            console.log('  Container size:', container.offsetWidth, 'x', container.offsetHeight);
-            console.log('  Container computed style:', {
-                position: getComputedStyle(container).position,
-                overflow: getComputedStyle(container).overflow,
-                height: getComputedStyle(container).height
-            });
 
             // Store original states for restoration
             if (!container.dataset.originalState) {
@@ -342,7 +339,20 @@ class TextEditor {
                 element.style.transform = 'translate(-50%, -50%)';
             }
 
-            console.log('  Container setup as viewport complete');
+            // Save all necessary styles to overlay so image displays correctly
+            if (this.currentPageId && selector) {
+                OverlayManager.setContainerOverlay(this.currentPageId, selector, {
+                    position: 'absolute',
+                    left: '50%',
+                    top: '50%',
+                    width: 'auto',
+                    height: 'auto',
+                    maxWidth: 'none',
+                    maxHeight: 'none',
+                    objectFit: 'none',
+                    transform: element.style.transform
+                });
+            }
         } else {
             console.log('  No container found');
         }
@@ -366,7 +376,7 @@ class TextEditor {
         // Load image library
         this.loadImageLibrary();
 
-        console.log('📝 Selected image element:', selector, element.src);
+        console.log('📝 Selected image element');
     }
 
     /**
@@ -658,7 +668,7 @@ class TextEditor {
         const selector = this.selectedElementSelector || this.generateSelector(this.selectedElement);
         OverlayManager.setImageOverlay(this.currentPageId, selector, newImagePath);
 
-        console.log('📝 Image overlay saved:', { pageId: this.currentPageId, selector, src: newImagePath });
+        console.log('📝 Image overlay saved');
     }
 
     /**
@@ -666,23 +676,6 @@ class TextEditor {
      */
     static moveImage(direction) {
         if (!this.selectedElement || this.selectedElement.tagName !== 'IMG') return;
-
-        console.log('🔧 MOVING IMAGE:', direction);
-        console.log('  Container:', this.imageContainer?.tagName || 'none');
-        console.log('  Image before move:', {
-            position: this.selectedElement.style.position,
-            transform: this.selectedElement.style.transform,
-            computedTransform: getComputedStyle(this.selectedElement).transform,
-            displaySize: `${this.selectedElement.offsetWidth}x${this.selectedElement.offsetHeight}`,
-            naturalSize: `${this.selectedElement.naturalWidth}x${this.selectedElement.naturalHeight}`
-        });
-
-        if (this.imageContainer) {
-            console.log('  Container before move:', {
-                height: this.imageContainer.offsetHeight,
-                overflow: getComputedStyle(this.imageContainer).overflow
-            });
-        }
 
         const moveAmount = 10; // pixels
 
@@ -723,26 +716,19 @@ class TextEditor {
             `translateY(${moveY}px) ` +  // Apply Y movement
             `scale(${scale})`;           // Apply scale
 
-        // Save to overlay
+        // Save to overlay (including all styles needed for correct display)
         const selector = this.generateSelector(this.selectedElement);
         OverlayManager.setContainerOverlay(this.currentPageId, selector, {
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            width: 'auto',
+            height: 'auto',
+            maxWidth: 'none',
+            maxHeight: 'none',
+            objectFit: 'none',
             transform: this.selectedElement.style.transform
         });
-
-        console.log(`📝 Moved image ${direction}: X=${moveX}px, Y=${moveY}px`);
-
-        // LOG: Check what happened after move
-        console.log('  Image after move:', {
-            transform: this.selectedElement.style.transform,
-            displaySize: `${this.selectedElement.offsetWidth}x${this.selectedElement.offsetHeight}`
-        });
-
-        if (this.imageContainer) {
-            console.log('  Container after move:', {
-                height: this.imageContainer.offsetHeight,
-                computedHeight: getComputedStyle(this.imageContainer).height
-            });
-        }
     }
 
     /**
@@ -766,19 +752,32 @@ class TextEditor {
             newScale = Math.max(currentScale - scaleStep, 0.05); // Min 0.05x zoom - allows much smaller sizes
         }
 
-        // Apply transform (preserve position)
-        const translateMatch = currentTransform.match(/translate\(([^,]+),\s*([^)]+)\)/);
-        const translateX = translateMatch ? translateMatch[1] : '0px';
-        const translateY = translateMatch ? translateMatch[2] : '0px';
-        this.selectedElement.style.transform = `translate(${translateX}, ${translateY}) scale(${newScale})`;
+        // Get movement values from the current transform
+        const translateXMatch = currentTransform.match(/translateX\(([^)]+)\)/);
+        const translateYMatch = currentTransform.match(/translateY\(([^)]+)\)/);
+        const moveX = translateXMatch ? translateXMatch[1] : '0px';
+        const moveY = translateYMatch ? translateYMatch[1] : '0px';
 
-        // Save to overlay
+        // Apply transform for editing (with centering)
+        this.selectedElement.style.transform =
+            `translate(-50%, -50%) ` +
+            `translateX(${moveX}) ` +
+            `translateY(${moveY}) ` +
+            `scale(${newScale})`;
+
+        // Save to overlay (including all styles needed for correct display)
         const selector = this.generateSelector(this.selectedElement);
         OverlayManager.setContainerOverlay(this.currentPageId, selector, {
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            width: 'auto',
+            height: 'auto',
+            maxWidth: 'none',
+            maxHeight: 'none',
+            objectFit: 'none',
             transform: this.selectedElement.style.transform
         });
-
-        console.log(`📝 Resized image to ${newScale}x`);
     }
 
     /**
@@ -787,8 +786,13 @@ class TextEditor {
     static resetImage() {
         if (!this.selectedElement || this.selectedElement.tagName !== 'IMG') return;
 
-        // Clear transform
+        // Clear all transforms and styles
         this.selectedElement.style.transform = '';
+        this.selectedElement.style.width = '';
+        this.selectedElement.style.height = '';
+        this.selectedElement.style.maxWidth = '';
+        this.selectedElement.style.objectFit = '';
+        this.selectedElement.style.objectPosition = '';
 
         // Remove from overlay
         const selector = this.generateSelector(this.selectedElement);

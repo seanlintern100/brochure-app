@@ -927,6 +927,34 @@ class EventManager {
         const mode = element.dataset.mode;
         if (!mode) return;
 
+        console.log('🎯 Setting selection mode to:', mode);
+
+        // Update button states
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        element.classList.add('active');
+
+        // Update hint text
+        const hintElement = document.getElementById('modeHint');
+        if (hintElement) {
+            const hintTexts = {
+                'text': 'Click highlighted text elements to edit them',
+                'images': 'Click highlighted images to edit, move, or zoom them',
+                'containers': 'Click highlighted containers to resize, move, or modify layout'
+            };
+            hintElement.textContent = hintTexts[mode] || 'Click highlighted elements to edit them';
+        }
+
+        // Notify the appropriate editor about the mode change
+        if (mode === 'text' || mode === 'images') {
+            TextEditor.setMode(mode);
+        } else if (mode === 'containers') {
+            TextEditor.setMode(mode); // Let TextEditor know to stop handling clicks
+            // ContainerEditor will handle its own setup
+        }
+
+        // If ElementEditor exists, notify it too
         if (window.ElementEditor) {
             window.ElementEditor.setSelectionMode(mode);
         }

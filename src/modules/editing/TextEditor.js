@@ -206,6 +206,12 @@ class TextEditor {
      * Create the text editing panel
      */
     static createEditingPanel() {
+        // Remove any existing panel first
+        const existingPanel = document.getElementById('textEditingPanel');
+        if (existingPanel) {
+            existingPanel.remove();
+        }
+
         this.editingPanel = document.createElement('div');
         this.editingPanel.id = 'textEditingPanel';
         this.editingPanel.className = 'text-editing-panel';
@@ -236,12 +242,24 @@ class TextEditor {
 
         document.body.appendChild(this.editingPanel);
 
-        // Add event listeners
-        document.getElementById('applyTextBtn').addEventListener('click', () => {
+        // Hide panel initially
+        this.editingPanel.style.display = 'none';
+
+        // Add event listeners with proper cleanup
+        const applyBtn = document.getElementById('applyTextBtn');
+        const cancelBtn = document.getElementById('cancelTextBtn');
+
+        applyBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('📝 Apply button clicked');
             this.applyTextEdit();
         });
 
-        document.getElementById('cancelTextBtn').addEventListener('click', () => {
+        cancelBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('📝 Cancel button clicked');
             this.hideEditingPanel();
         });
 
@@ -257,16 +275,24 @@ class TextEditor {
      * Show the editing panel for selected element
      */
     static showEditingPanel(element, selector) {
+        console.log('📝 showEditingPanel called with:', { element, selector });
+
         const preview = document.getElementById('textPreview');
         const editor = document.getElementById('textEditor');
 
         const currentText = element.textContent.trim();
+        console.log('📝 Current text extracted:', `"${currentText}"`);
+
         preview.textContent = `Element: ${selector}`;
         editor.value = currentText;
+
+        console.log('📝 Editor value set to:', `"${editor.value}"`);
 
         this.editingPanel.style.display = 'block';
         editor.focus();
         editor.select();
+
+        console.log('📝 Panel shown and editor focused');
     }
 
     /**
@@ -286,10 +312,19 @@ class TextEditor {
      * Apply text edit using overlay system
      */
     static applyTextEdit() {
-        if (!this.selectedElement || !this.currentPageId) return;
+        console.log('📝 applyTextEdit called');
+        console.log('📝 selectedElement:', this.selectedElement);
+        console.log('📝 currentPageId:', this.currentPageId);
+
+        if (!this.selectedElement || !this.currentPageId) {
+            console.log('📝 Missing selectedElement or currentPageId, returning early');
+            return;
+        }
 
         const newText = document.getElementById('textEditor').value;
         const selector = this.generateSelector(this.selectedElement);
+
+        console.log('📝 Applying text edit:', { pageId: this.currentPageId, selector, newText });
 
         // Save to overlay system
         OverlayManager.setTextOverlay(this.currentPageId, selector, newText);
@@ -300,7 +335,7 @@ class TextEditor {
         // Hide panel
         this.hideEditingPanel();
 
-        console.log('📝 Applied text edit:', { pageId: this.currentPageId, selector, newText });
+        console.log('📝 Applied text edit successfully');
     }
 
     /**

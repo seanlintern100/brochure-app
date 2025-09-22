@@ -7,6 +7,10 @@ import ProjectManager from '../data/ProjectManager.js';
 import ModalManager from './ModalManager.js';
 import UploadModalManager from '../upload/UploadModalManager.js';
 import OverlayManager from '../editing/OverlayManager.js';
+import TextEditor from '../editing/TextEditor.js';
+import ImageReplacer from '../editing/ImageReplacer.js';
+import ContainerEditor from '../editing/ContainerEditor.js';
+import SectionEditor from '../editing/SectionEditor.js';
 import { ACTIONS, EVENTS } from './constants.js';
 
 class EventManager {
@@ -14,6 +18,14 @@ class EventManager {
         console.log('EventManager.init() called');
         this.setupEventDelegation();
         this.setupEventBusListeners();
+
+        // Initialize the new editing system
+        OverlayManager.init();
+        TextEditor.init();
+        ImageReplacer.init();
+        ContainerEditor.init();
+        SectionEditor.init();
+
         console.log('EventManager.init() completed');
     }
 
@@ -94,7 +106,17 @@ class EventManager {
             [ACTIONS.START_UPLOAD]: () => this.handleStartUpload(event, element),
             'toggle-sidebar-section': () => this.handleToggleSidebarSection(event, element),
             'set-selection-mode': () => this.handleSetSelectionMode(event, element),
-            'close-element-editor': () => this.handleCloseElementEditor(event, element)
+            'close-element-editor': () => this.handleCloseElementEditor(event, element),
+            // New editing actions
+            'move-image': () => this.handleMoveImage(event, element),
+            'resize-image': () => this.handleResizeImage(event, element),
+            'reset-image': () => this.handleResetImage(event, element),
+            'move-container': () => this.handleMoveContainer(event, element),
+            'resize-container': () => this.handleResizeContainer(event, element),
+            'reset-container': () => this.handleResetContainer(event, element),
+            'extend-section': () => this.handleExtendSection(event, element),
+            'shrink-section': () => this.handleShrinkSection(event, element),
+            'reset-section-height': () => this.handleResetSectionHeight(event, element)
         };
 
         console.log('Available handlers:', Object.keys(handlers));
@@ -968,6 +990,47 @@ class EventManager {
         if (window.ElementEditor) {
             window.ElementEditor.hidePanel();
         }
+    }
+
+    // New editing action handlers that dispatch to the appropriate editor
+    static handleMoveImage(event, element) {
+        const direction = element.dataset.direction;
+        EventBus.emit(EVENTS.ACTION, { action: 'move-image', direction });
+    }
+
+    static handleResizeImage(event, element) {
+        const direction = element.dataset.direction;
+        EventBus.emit(EVENTS.ACTION, { action: 'resize-image', direction });
+    }
+
+    static handleResetImage(event, element) {
+        EventBus.emit(EVENTS.ACTION, { action: 'reset-image' });
+    }
+
+    static handleMoveContainer(event, element) {
+        const direction = element.dataset.direction;
+        EventBus.emit(EVENTS.ACTION, { action: 'move-container', direction });
+    }
+
+    static handleResizeContainer(event, element) {
+        const direction = element.dataset.direction;
+        EventBus.emit(EVENTS.ACTION, { action: 'resize-container', direction });
+    }
+
+    static handleResetContainer(event, element) {
+        EventBus.emit(EVENTS.ACTION, { action: 'reset-container' });
+    }
+
+    static handleExtendSection(event, element) {
+        EventBus.emit(EVENTS.ACTION, { action: 'extend-section' });
+    }
+
+    static handleShrinkSection(event, element) {
+        EventBus.emit(EVENTS.ACTION, { action: 'shrink-section' });
+    }
+
+    static handleResetSectionHeight(event, element) {
+        EventBus.emit(EVENTS.ACTION, { action: 'reset-section-height' });
     }
 }
 

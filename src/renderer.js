@@ -16,7 +16,9 @@ import RenderManager from './modules/ui/RenderManager.js';
 import LoadingManager from './modules/ui/LoadingManager.js';
 import SidebarManager from './modules/ui/SidebarManager.js';
 import SearchManager from './modules/ui/SearchManager.js';
-import ElementEditor from './modules/ui/ElementEditor.js';
+
+import OverlayManager from './modules/editing/OverlayManager.js';
+import TextEditor from './modules/editing/TextEditor.js';
 
 import UploadModalManager from './modules/upload/UploadModalManager.js';
 
@@ -75,8 +77,11 @@ class BrochureRenderer {
         console.log('Initializing SearchManager...');
         SearchManager.init();
 
-        console.log('Initializing ElementEditor...');
-        ElementEditor.init();
+        console.log('Initializing OverlayManager...');
+        OverlayManager.init();
+
+        console.log('Initializing TextEditor...');
+        TextEditor.init();
 
         console.log('Setting up file change listeners...');
         this.setupFileChangeListeners();

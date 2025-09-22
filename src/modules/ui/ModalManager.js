@@ -3,6 +3,7 @@ import ErrorHandler from '../core/ErrorHandler.js';
 import StateManager from '../core/StateManager.js';
 import ProjectManager from '../data/ProjectManager.js';
 import UIManager from './UIManager.js';
+import UnifiedPageRenderer from '../rendering/UnifiedPageRenderer.js';
 import { Templates } from './templates.js';
 import { MODAL_IDS, EVENTS, CSS_CLASSES } from './constants.js';
 
@@ -160,35 +161,20 @@ class ModalManager {
             zoomPageTitle.textContent = `Edit: ${templateName}`;
         }
 
-        // Generate full page HTML for editing
-        const fullPageHTML = ProjectManager.generateSinglePageHTML(page);
+        // Generate page HTML with overlays for editing
+        const pageWithOverlays = UnifiedPageRenderer.generatePageWithOverlays(page, currentProject);
 
-        // Load page content in zoom frame
+
+        // Load page content in zoom frame using srcdoc (more reliable than data URL)
         const zoomFrame = document.getElementById('zoomFrame');
         if (zoomFrame) {
+            // Use srcdoc attribute which is more reliable for large content
+            zoomFrame.srcdoc = pageWithOverlays;
 
-            // Clear existing content
-            zoomFrame.innerHTML = '';
-
-            // Create page container for direct DOM rendering
-            const pageContainer = document.createElement('div');
-            pageContainer.className = 'direct-page-content';
-            pageContainer.setAttribute('data-page-id', pageId);
-            pageContainer.style.width = '100%';
-            pageContainer.style.height = '100%';
-            pageContainer.style.overflow = 'auto';
-
-            // Sanitize and insert HTML directly
-            const sanitizedHTML = this.sanitizeHTML(fullPageHTML);
-            pageContainer.innerHTML = sanitizedHTML;
-
-            // Add to zoom frame
-            zoomFrame.appendChild(pageContainer);
-
-            // Apply saved element transforms immediately (no iframe delay needed)
-            setTimeout(() => {
-                this.applyElementTransformsDirect(pageContainer, pageId, currentProject);
-            }, 100);
+            // Fallback for empty content
+            if (!pageWithOverlays || pageWithOverlays.trim().length === 0) {
+                zoomFrame.srcdoc = '<html><body><h1>Error</h1><p>Content generation failed</p></body></html>';
+            }
         }
 
         // Store current page for saving

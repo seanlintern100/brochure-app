@@ -8,13 +8,18 @@
  *
  * Each page includes ALL necessary styles and fixes with no dependencies
  * on external CSS, ensuring visual consistency across all contexts.
+ *
+ * NEW: Supports overlay system for template-native editing without corruption.
  */
+
+import PreviewRenderer from '../editing/PreviewRenderer.js';
+import OverlayManager from '../editing/OverlayManager.js';
 
 class UnifiedPageRenderer {
     /**
      * Generate a completely self-contained page
      * @param {Object} page - Page object with id, templateId
-     * @param {Object} project - Current project with templateCopies and elementTransforms
+     * @param {Object} project - Current project with templateCopies and overlayData
      * @param {number} pageNumber - Page number for print/reference
      * @param {Object} options - Rendering options
      * @returns {string} Complete self-contained HTML
@@ -23,14 +28,16 @@ class UnifiedPageRenderer {
         const {
             includePageBreak = true,
             includePageNumber = true,
-            applyTransforms = true
+            applyTransforms = true,
+            applyOverlays = true  // NEW: Apply overlay data for editing
         } = options;
 
 
         // Get template copy
         const templateCopy = project.templateCopies[page.templateId];
         if (!templateCopy) {
-            console.error(`❌ Template copy not found for page ${page.id}`);
+            console.error(`❌ Template copy not found for page ${page.id}, templateId: ${page.templateId}`);
+            console.error('Available template copies:', Object.keys(project.templateCopies || {}));
             return this.generateErrorPage(page.id, pageNumber);
         }
 
@@ -39,7 +46,18 @@ class UnifiedPageRenderer {
         // Clean any nested HTML document structures that may have been saved
         html = this.cleanNestedHTML(html);
 
-        // Apply element transforms if enabled
+        // NEW: Apply overlay data for template-native editing
+        if (applyOverlays && project.overlayData && project.overlayData[page.id]) {
+            console.log('🎨 Applying overlays from project data for page:', page.id);
+            // Load overlay data into OverlayManager if not already loaded
+            OverlayManager.loadOverlays(project.overlayData);
+            html = PreviewRenderer.applyOverlays(html, page.id);
+        } else if (applyOverlays) {
+            // Apply current overlay data from OverlayManager (for live editing)
+            html = PreviewRenderer.applyOverlays(html, page.id);
+        }
+
+        // Apply legacy element transforms if enabled (backward compatibility)
         if (applyTransforms) {
             html = this.applyElementTransforms(html, page.id, project);
         }
@@ -56,9 +74,6 @@ class UnifiedPageRenderer {
      * Process complete HTML document
      */
     static processCompleteHTMLDocument(html, page, pageNumber, options) {
-        console.log('🚀 DEBUG: processCompleteHTMLDocument called - NEW DOM PARSING VERSION');
-        console.log('🚀 DEBUG: Input HTML contains </body>:', html.includes('</body>'));
-
         // Parse HTML using DOM parser for more reliable extraction
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
@@ -66,9 +81,6 @@ class UnifiedPageRenderer {
         // Extract body content safely
         const bodyElement = doc.querySelector('body');
         const bodyContent = bodyElement ? bodyElement.innerHTML.trim() : '';
-
-        console.log('🚀 DEBUG: Extracted body content contains </body>:', bodyContent.includes('</body>'));
-        console.log('🚀 DEBUG: Body content length:', bodyContent.length);
 
         // Extract ALL styles from document (both head and inline)
         const allStyleElements = doc.querySelectorAll('style');
@@ -410,6 +422,36 @@ ${allPages.join('\n')}
         }
 
         // If no nested HTML, return as-is
+        return html;
+    }
+
+    /**
+     * NEW: Generate page with overlays for live editing (convenience method)
+     * This is specifically for the zoom modal and editing scenarios
+     */
+    static generatePageWithOverlays(page, project, pageNumber = 1) {
+        return this.generateSelfContainedPage(page, project, pageNumber, {
+            includePageBreak: false,
+            includePageNumber: false,
+            applyTransforms: false, // Skip legacy transforms when using overlays
+            applyOverlays: true     // Always apply overlays for editing
+        });
+    }
+
+    /**
+     * NEW: Generate page for export (clean, no overlays attributes)
+     * This ensures export HTML is clean of editing artifacts
+     */
+    static generatePageForExport(page, project, pageNumber = 1) {
+        let html = this.generateSelfContainedPage(page, project, pageNumber, {
+            includePageBreak: true,
+            includePageNumber: true,
+            applyTransforms: false, // Skip legacy transforms
+            applyOverlays: true     // Apply overlays but clean them after
+        });
+
+        // Clean overlay debugging attributes for export
+        html = PreviewRenderer.cleanOverlayAttributes(html);
         return html;
     }
 }

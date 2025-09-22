@@ -4,6 +4,7 @@ import ErrorHandler from '../core/ErrorHandler.js';
 import EventManager from '../ui/EventManager.js';
 import UnifiedPageRenderer from '../rendering/UnifiedPageRenderer.js';
 import TemplateManager from './TemplateManager.js';
+import OverlayManager from '../editing/OverlayManager.js';
 import { EVENTS } from '../ui/constants.js';
 
 class ProjectManager {
@@ -90,6 +91,12 @@ class ProjectManager {
     static async loadProject(filename) {
         try {
             const project = await window.electronAPI.loadProject(filename);
+
+            // Load overlay data into OverlayManager
+            if (project.overlayData) {
+                OverlayManager.loadOverlays(project.overlayData);
+                console.log('📂 Loaded overlay data for project:', Object.keys(project.overlayData).length, 'pages');
+            }
 
             StateManager.setState({
                 currentProject: project,

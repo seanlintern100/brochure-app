@@ -96,7 +96,12 @@ export const EVENTS = {
     UPLOAD_PREVIEW_RENDERED: 'upload:preview-rendered',
     UPLOAD_PREVIEW_CLICKED: 'upload:preview-clicked',
     UPLOAD_PREVIEW_REORDERED: 'upload:preview-reordered',
-    UPLOAD_ERROR: 'upload:error'
+    UPLOAD_ERROR: 'upload:error',
+
+    // Overlay System Events
+    OVERLAY_CHANGED: 'overlay:changed',
+    OVERLAY_CLEARED: 'overlay:cleared',
+    OVERLAY_APPLIED: 'overlay:applied'
 };
 
 export const SELECTORS = {

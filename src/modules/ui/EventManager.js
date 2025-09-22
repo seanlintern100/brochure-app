@@ -6,6 +6,7 @@ import TemplateManager from '../data/TemplateManager.js';
 import ProjectManager from '../data/ProjectManager.js';
 import ModalManager from './ModalManager.js';
 import UploadModalManager from '../upload/UploadModalManager.js';
+import OverlayManager from '../editing/OverlayManager.js';
 import { ACTIONS, EVENTS } from './constants.js';
 
 class EventManager {
@@ -52,26 +53,11 @@ class EventManager {
             action = element.dataset.action;
             attempts++;
         }
-        console.log('EventManager.handleClick:', {
-            target: event.target,
-            actionElement: element,
-            action: action,
-            actionType: typeof action,
-            tagName: event.target.tagName,
-            id: event.target.id,
-            dataset: event.target.dataset
-        });
-
-        console.log('Action check - action value:', action, 'type:', typeof action, 'truthy:', !!action);
-
         if (!action) {
-            console.log('No action found, returning');
             return;
         }
 
-        // Trim whitespace just in case
         const cleanAction = action.trim();
-        console.log('Clean action:', cleanAction);
 
         // Prevent default for button actions
         if (event.target.tagName === 'BUTTON') {
@@ -125,8 +111,6 @@ class EventManager {
                 ErrorHandler.logError(error, `EventManager.handleClick.${cleanAction}`, `Action "${cleanAction}" failed`);
                 ErrorHandler.showUserError(`Operation failed: ${error.message}`, 'error');
             }
-        } else {
-            console.log('No handler found for action:', cleanAction);
         }
     }
 
@@ -649,38 +633,27 @@ class EventManager {
 
     static handleSaveZoomChanges(event, element) {
         try {
-            // Get the direct DOM content from the zoom modal
-            const zoomFrame = document.getElementById('zoomFrame');
-            const pageContainer = zoomFrame?.querySelector('.direct-page-content');
-
-            if (!pageContainer || !ModalManager.currentZoomPage) {
-                throw new Error('No page content to save');
+            if (!ModalManager.currentZoomPage) {
+                throw new Error('No page to save');
             }
 
-            // Extract the modified HTML from the direct DOM, handling nested HTML documents
-            const modifiedHTML = this.extractCleanHTML(pageContainer);
-            console.log('💾 DEBUG: Extracted modified HTML length:', modifiedHTML.length);
-            console.log('💾 DEBUG: Template ID:', ModalManager.currentZoomPage.templateId);
+            const pageId = ModalManager.currentZoomPage.id;
 
-            // Capture element transforms from the direct DOM
-            const elementTransforms = this.captureElementTransforms(pageContainer, ModalManager.currentZoomPage.id);
+            // Save overlay data instead of extracting broken HTML
+            const overlayData = OverlayManager.getAllOverlays();
 
-            // Update the project with the modified content
+            console.log('💾 Saving overlay data for page:', pageId, overlayData[pageId]);
+
+            // Update the project with overlay data
             const currentProject = StateManager.getState().currentProject;
-            if (currentProject && currentProject.templateCopies[ModalManager.currentZoomPage.templateId]) {
-                console.log('💾 DEBUG: Saving template content (clean HTML only, no wrapper)');
-                currentProject.templateCopies[ModalManager.currentZoomPage.templateId].modifiedHtml = modifiedHTML;
-
-                // Initialize elementTransforms if it doesn't exist
-                if (!currentProject.elementTransforms) {
-                    currentProject.elementTransforms = {};
+            if (currentProject) {
+                // Initialize overlayData if it doesn't exist
+                if (!currentProject.overlayData) {
+                    currentProject.overlayData = {};
                 }
 
-                // Store element transforms for this page
-                if (Object.keys(elementTransforms).length > 0) {
-                    currentProject.elementTransforms[ModalManager.currentZoomPage.id] = elementTransforms;
-                    console.log('💾 Saved element transforms for page:', ModalManager.currentZoomPage.id, elementTransforms);
-                }
+                // Store overlay data for all pages
+                currentProject.overlayData = overlayData;
 
                 // Mark project as dirty and update state
                 StateManager.setState({
@@ -691,10 +664,11 @@ class EventManager {
                 // Emit events to update UI
                 EventBus.emit(EVENTS.PROJECT_DIRTY, true);
                 EventBus.emit(EVENTS.PAGE_UPDATED, {
-                    pageId: ModalManager.currentZoomPage.id,
-                    html: modifiedHTML,
-                    elementTransforms: elementTransforms
+                    pageId: pageId,
+                    overlayData: overlayData[pageId]
                 });
+
+                console.log('💾 Successfully saved overlay data');
             }
 
             // Close modal and show success

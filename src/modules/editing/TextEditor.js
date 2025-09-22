@@ -273,7 +273,7 @@ class TextEditor {
             width: getComputedStyle(element).width,
             height: getComputedStyle(element).height,
             objectFit: getComputedStyle(element).objectFit,
-            overflow: getComputedStyle(element).overflow
+            maxWidth: getComputedStyle(element).maxWidth
         });
 
         // Check for container
@@ -286,6 +286,49 @@ class TextEditor {
                 overflow: getComputedStyle(container).overflow,
                 height: getComputedStyle(container).height
             });
+
+            // Store original states for restoration
+            if (!container.dataset.originalState) {
+                container.dataset.originalState = JSON.stringify({
+                    overflow: getComputedStyle(container).overflow,
+                    position: getComputedStyle(container).position,
+                    height: container.offsetHeight + 'px'
+                });
+            }
+
+            if (!element.dataset.originalStyles) {
+                element.dataset.originalStyles = JSON.stringify({
+                    width: element.style.width || getComputedStyle(element).width,
+                    height: element.style.height || getComputedStyle(element).height,
+                    maxWidth: element.style.maxWidth || getComputedStyle(element).maxWidth,
+                    maxHeight: element.style.maxHeight || getComputedStyle(element).maxHeight,
+                    objectFit: element.style.objectFit || getComputedStyle(element).objectFit,
+                    position: element.style.position || getComputedStyle(element).position
+                });
+            }
+
+            // Setup container as fixed viewport
+            container.style.overflow = 'hidden';
+            container.style.position = 'relative';
+            container.style.height = JSON.parse(container.dataset.originalState).height;
+
+            // Setup image for free movement at natural size
+            element.style.position = 'absolute';
+            element.style.left = '50%';
+            element.style.top = '50%';
+            element.style.width = 'auto';
+            element.style.height = 'auto';
+            element.style.maxWidth = 'none';
+            element.style.maxHeight = 'none';
+            element.style.objectFit = 'none';
+
+            // Center the image initially
+            const currentTransform = element.style.transform || '';
+            if (!currentTransform.includes('translate')) {
+                element.style.transform = 'translate(-50%, -50%)';
+            }
+
+            console.log('  Container setup as viewport complete');
         } else {
             console.log('  No container found');
         }
@@ -324,15 +367,33 @@ class TextEditor {
             el.removeAttribute('data-text-selected');
         });
 
-        // Clear image selections
+        // Clear image selections and restore original styles
         const imageSelected = iframeDoc.querySelectorAll('[data-image-selected]');
         imageSelected.forEach(el => {
             el.style.outline = '';
             el.style.boxShadow = '';
             el.removeAttribute('data-image-selected');
+
+            // Restore original image styles if stored
+            if (el.dataset.originalStyles) {
+                const styles = JSON.parse(el.dataset.originalStyles);
+                Object.assign(el.style, styles);
+                delete el.dataset.originalStyles;
+            }
+        });
+
+        // Restore container state if modified
+        const containers = iframeDoc.querySelectorAll('[data-original-state]');
+        containers.forEach(container => {
+            const state = JSON.parse(container.dataset.originalState);
+            container.style.overflow = state.overflow;
+            container.style.position = state.position;
+            // Keep height to prevent layout jumps
+            delete container.dataset.originalState;
         });
 
         this.selectedElement = null;
+        this.imageContainer = null;
     }
 
     /**
@@ -609,37 +670,42 @@ class TextEditor {
 
         const moveAmount = 10; // pixels
 
-        // Get current transform values or defaults
-        const currentTransform = this.selectedElement.style.transform || '';
-        const translateMatch = currentTransform.match(/translate\(([^,]+),\s*([^)]+)\)/);
-        let currentX = 0, currentY = 0;
+        // Parse current transform - handle centering transform plus movement
+        const currentTransform = this.selectedElement.style.transform || 'translate(-50%, -50%)';
 
-        if (translateMatch) {
-            currentX = parseFloat(translateMatch[1]) || 0;
-            currentY = parseFloat(translateMatch[2]) || 0;
-        }
+        // Extract movement offsets (separate from centering)
+        let moveX = 0, moveY = 0;
+        const moveXMatch = currentTransform.match(/translateX\(([^)]+)\)/);
+        const moveYMatch = currentTransform.match(/translateY\(([^)]+)\)/);
+        if (moveXMatch) moveX = parseFloat(moveXMatch[1]) || 0;
+        if (moveYMatch) moveY = parseFloat(moveYMatch[1]) || 0;
+
+        // Extract scale
+        const scaleMatch = currentTransform.match(/scale\(([^)]+)\)/);
+        const scale = scaleMatch ? parseFloat(scaleMatch[1]) : 1;
 
         // Calculate new position
-        let newX = currentX, newY = currentY;
         switch (direction) {
             case 'up':
-                newY -= moveAmount;
+                moveY -= moveAmount;
                 break;
             case 'down':
-                newY += moveAmount;
+                moveY += moveAmount;
                 break;
             case 'left':
-                newX -= moveAmount;
+                moveX -= moveAmount;
                 break;
             case 'right':
-                newX += moveAmount;
+                moveX += moveAmount;
                 break;
         }
 
-        // Apply transform
-        const scaleMatch = currentTransform.match(/scale\(([^)]+)\)/);
-        const scale = scaleMatch ? scaleMatch[1] : '1';
-        this.selectedElement.style.transform = `translate(${newX}px, ${newY}px) scale(${scale})`;
+        // Apply combined transform: centering + movement + scale
+        this.selectedElement.style.transform =
+            `translate(-50%, -50%) ` +  // Keep centered
+            `translateX(${moveX}px) ` +  // Apply X movement
+            `translateY(${moveY}px) ` +  // Apply Y movement
+            `scale(${scale})`;           // Apply scale
 
         // Save to overlay
         const selector = this.generateSelector(this.selectedElement);
@@ -647,7 +713,7 @@ class TextEditor {
             transform: this.selectedElement.style.transform
         });
 
-        console.log(`📝 Moved image ${direction}: ${newX}px, ${newY}px`);
+        console.log(`📝 Moved image ${direction}: X=${moveX}px, Y=${moveY}px`);
 
         // LOG: Check what happened after move
         console.log('  Image after move:', {

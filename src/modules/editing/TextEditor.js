@@ -263,46 +263,10 @@ class TextEditor {
         // Clear previous selection
         this.clearSelection(iframeDoc);
 
-        // Check if image is in a container and store that info
-        const container = element.closest('[data-editable="image"], .image-container, footer, header, section');
-        this.imageContainer = container;
-
         // Highlight selected image
         element.style.outline = '3px solid #E68A2E';
         element.style.boxShadow = '0 0 10px rgba(230, 138, 46, 0.5)';
         element.setAttribute('data-image-selected', 'true');
-
-        // If image is in a container, set up proper viewport behavior
-        if (container && (container.tagName === 'FOOTER' || container.tagName === 'HEADER' || container.tagName === 'SECTION')) {
-            // Make container a viewport
-            container.style.overflow = 'hidden';
-            container.style.position = 'relative';
-
-            // Store container dimensions
-            if (!container.dataset.originalHeight) {
-                container.dataset.originalHeight = container.offsetHeight + 'px';
-                container.style.height = container.offsetHeight + 'px'; // Fix height
-            }
-
-            // Make image larger than container so it can be panned
-            element.style.position = 'absolute';
-            element.style.top = '0';
-            element.style.left = '0';
-            element.style.width = 'auto';
-            element.style.height = 'auto';
-            element.style.minWidth = '100%';
-            element.style.minHeight = '100%';
-            element.style.objectFit = 'cover'; // This ensures image covers container but can be larger
-        } else {
-            // For standalone images, use relative positioning
-            element.style.position = 'relative';
-        }
-
-        // Store original dimensions for reference
-        if (!element.dataset.originalWidth) {
-            element.dataset.originalWidth = element.naturalWidth + 'px';  // Use naturalWidth for actual image size
-            element.dataset.originalHeight = element.naturalHeight + 'px';
-        }
 
         this.selectedElement = element;
 

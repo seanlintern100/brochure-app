@@ -263,6 +263,36 @@ class TextEditor {
         // Clear previous selection
         this.clearSelection(iframeDoc);
 
+        // LOG: Analyze the image and container situation
+        console.log('🔍 IMAGE SELECTION ANALYSIS:');
+        console.log('  Image element:', element);
+        console.log('  Image natural size:', element.naturalWidth, 'x', element.naturalHeight);
+        console.log('  Image display size:', element.offsetWidth, 'x', element.offsetHeight);
+        console.log('  Image computed style:', {
+            position: getComputedStyle(element).position,
+            width: getComputedStyle(element).width,
+            height: getComputedStyle(element).height,
+            objectFit: getComputedStyle(element).objectFit,
+            overflow: getComputedStyle(element).overflow
+        });
+
+        // Check for container
+        const container = element.closest('footer, header, section, div');
+        if (container) {
+            console.log('  Container found:', container.tagName);
+            console.log('  Container size:', container.offsetWidth, 'x', container.offsetHeight);
+            console.log('  Container computed style:', {
+                position: getComputedStyle(container).position,
+                overflow: getComputedStyle(container).overflow,
+                height: getComputedStyle(container).height
+            });
+        } else {
+            console.log('  No container found');
+        }
+
+        // Store container reference
+        this.imageContainer = container;
+
         // Highlight selected image
         element.style.outline = '3px solid #E68A2E';
         element.style.boxShadow = '0 0 10px rgba(230, 138, 46, 0.5)';
@@ -560,6 +590,23 @@ class TextEditor {
     static moveImage(direction) {
         if (!this.selectedElement || this.selectedElement.tagName !== 'IMG') return;
 
+        console.log('🔧 MOVING IMAGE:', direction);
+        console.log('  Container:', this.imageContainer?.tagName || 'none');
+        console.log('  Image before move:', {
+            position: this.selectedElement.style.position,
+            transform: this.selectedElement.style.transform,
+            computedTransform: getComputedStyle(this.selectedElement).transform,
+            displaySize: `${this.selectedElement.offsetWidth}x${this.selectedElement.offsetHeight}`,
+            naturalSize: `${this.selectedElement.naturalWidth}x${this.selectedElement.naturalHeight}`
+        });
+
+        if (this.imageContainer) {
+            console.log('  Container before move:', {
+                height: this.imageContainer.offsetHeight,
+                overflow: getComputedStyle(this.imageContainer).overflow
+            });
+        }
+
         const moveAmount = 10; // pixels
 
         // Get current transform values or defaults
@@ -601,6 +648,19 @@ class TextEditor {
         });
 
         console.log(`📝 Moved image ${direction}: ${newX}px, ${newY}px`);
+
+        // LOG: Check what happened after move
+        console.log('  Image after move:', {
+            transform: this.selectedElement.style.transform,
+            displaySize: `${this.selectedElement.offsetWidth}x${this.selectedElement.offsetHeight}`
+        });
+
+        if (this.imageContainer) {
+            console.log('  Container after move:', {
+                height: this.imageContainer.offsetHeight,
+                computedHeight: getComputedStyle(this.imageContainer).height
+            });
+        }
     }
 
     /**

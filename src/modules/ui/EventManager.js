@@ -11,6 +11,7 @@ import TextEditor from '../editing/TextEditor.js';
 import ImageReplacer from '../editing/ImageReplacer.js';
 import ContainerEditor from '../editing/ContainerEditor.js';
 import SectionEditor from '../editing/SectionEditor.js';
+import UnifiedPageRenderer from '../rendering/UnifiedPageRenderer.js';
 import { ACTIONS, EVENTS } from './constants.js';
 
 class EventManager {
@@ -705,19 +706,21 @@ class EventManager {
 
     static async handleExportPage(event, element) {
         try {
-            // Get the direct DOM content from the zoom modal
-            const zoomFrame = document.getElementById('zoomFrame');
-            const pageContainer = zoomFrame?.querySelector('.direct-page-content');
+            // Get current project and page for export
+            const currentProject = ProjectManager.getCurrentProject();
+            const currentPage = ModalManager.currentZoomPage;
 
-            if (!pageContainer || !ModalManager.currentZoomPage) {
+            if (!currentProject || !currentPage) {
                 throw new Error('No page content to export');
             }
 
-            // Extract the modified HTML from the direct DOM, handling nested HTML documents
-            const modifiedHTML = this.extractCleanHTML(pageContainer);
+            // Generate page HTML with current overlays applied
+            const modifiedHTML = UnifiedPageRenderer.generatePageWithOverlays(
+                currentPage,
+                currentProject
+            );
 
             // Get page information
-            const currentPage = ModalManager.currentZoomPage;
             const pageName = currentPage.templateId || `page-${Date.now()}`;
 
             // Create metadata for the template

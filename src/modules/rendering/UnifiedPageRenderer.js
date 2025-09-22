@@ -116,16 +116,23 @@ class UnifiedPageRenderer {
      * Wrap content in completely self-contained div
      */
     static wrapInSelfContainedDiv(content, originalStyles, page, pageNumber, options) {
-        const { includePageBreak, includePageNumber, isExport = false } = options;
+        const { includePageBreak, includePageNumber, isExport = false, isMultiPageDocument = false } = options;
 
-        // Generate comprehensive self-contained styles
-        const allStyles = [
-            ...originalStyles,
-            this.generateUniversalFixes(),
-            this.generatePrintOptimizations(),
-            this.generateOverflowFixes(),
-            this.generatePageNumberStyles(page.id)
-        ].join('\n');
+        // Only apply CSS scoping in multi-page documents to prevent interference
+        const allStyles = isMultiPageDocument
+            ? [
+                ...this.scopeStylesToPage(originalStyles, page.id),
+                this.generateScopedUniversalFixes(page.id),
+                this.generatePrintOptimizations(),
+                this.generatePageNumberStyles(page.id)
+              ].join('\n')
+            : [
+                ...originalStyles,
+                this.generateUniversalFixes(),
+                this.generatePrintOptimizations(),
+                this.generateOverflowFixes(),
+                this.generatePageNumberStyles(page.id)
+              ].join('\n');
 
         const pageBreakStyle = includePageBreak ? 'page-break-after: always;' : '';
         // For exports, don't include page numbers as they cause PDF display issues
@@ -352,9 +359,11 @@ class UnifiedPageRenderer {
         project.pages.forEach((page, index) => {
             const pageOptions = {
                 ...options,
-                includePageBreak: index < project.pages.length - 1 // No break on last page
+                includePageBreak: index < project.pages.length - 1, // No break on last page
+                isMultiPageDocument: project.pages.length > 1 // Enable CSS scoping for multi-page docs
             };
 
+            // Generate self-contained page - scoped only if multiple pages
             const selfContainedPage = this.generateSelfContainedPage(
                 page,
                 project,
@@ -365,7 +374,7 @@ class UnifiedPageRenderer {
             allPages.push(selfContainedPage);
         });
 
-        // Minimal wrapper with NO global styles that could conflict
+        // Minimal wrapper - no global styles to conflict
         return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -379,12 +388,11 @@ class UnifiedPageRenderer {
     <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
-        /* MINIMAL global styles - no conflicts with page styles */
+        /* MINIMAL document wrapper - no conflicts */
         body {
             margin: 0;
             padding: 0;
             background: #f5f5f5;
-            font-family: 'Source Sans 3', Arial, sans-serif;
         }
 
         @media print {
@@ -453,6 +461,51 @@ ${allPages.join('\n')}
         // Clean overlay debugging attributes for export
         html = PreviewRenderer.cleanOverlayAttributes(html);
         return html;
+    }
+
+    /**
+     * Scope all CSS rules to a specific page to prevent cross-page interference
+     */
+    static scopeStylesToPage(originalStyles, pageId) {
+        return originalStyles.map(styleBlock => {
+            // Prefix all CSS selectors with the page-specific class
+            return styleBlock.replace(/([^{}]+){/g, (match, selector) => {
+                const trimmedSelector = selector.trim();
+
+                // Skip @rules (like @media, @page, etc.)
+                if (trimmedSelector.startsWith('@')) {
+                    return match;
+                }
+
+                // Skip :root variables - these need to be global
+                if (trimmedSelector.includes(':root')) {
+                    return match;
+                }
+
+                // Scope other selectors to this page
+                return `.page-${pageId} ${trimmedSelector} {`;
+            });
+        });
+    }
+
+    /**
+     * Generate scoped universal fixes for a specific page
+     */
+    static generateScopedUniversalFixes(pageId) {
+        return `
+            /* Scoped fixes for page ${pageId} only */
+            .page-${pageId} input[type="file"],
+            .page-${pageId} .image-input,
+            .page-${pageId} .edit-indicator,
+            .page-${pageId} [data-editable].selected {
+                display: none !important;
+            }
+
+            /* Page wrapper fixes */
+            .page-${pageId}.unified-page {
+                overflow: visible !important;
+            }
+        `;
     }
 }
 

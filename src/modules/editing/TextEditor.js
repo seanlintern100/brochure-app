@@ -263,6 +263,20 @@ class TextEditor {
         // Clear previous selection
         this.clearSelection(iframeDoc);
 
+        // IMPORTANT: Generate selector BEFORE any DOM modifications
+        const selector = this.generateSelector(element);
+        console.log('🎯 Generated selector for image:', selector);
+
+        // Store the page ID from iframe for later use
+        const iframe = document.getElementById('zoomFrame');
+        if (iframe && iframe.contentDocument === iframeDoc) {
+            const page = iframeDoc.body.querySelector('[data-page-id]');
+            if (page) {
+                this.currentPageId = page.dataset.pageId;
+                console.log('🖼️ Stored pageId for image editing:', this.currentPageId);
+            }
+        }
+
         // LOG: Analyze the image and container situation
         console.log('🔍 IMAGE SELECTION ANALYSIS:');
         console.log('  Image element:', element);
@@ -343,8 +357,8 @@ class TextEditor {
 
         this.selectedElement = element;
 
-        // Generate selector for the image
-        const selector = this.generateSelector(element);
+        // Store the selector generated BEFORE modifications
+        this.selectedElementSelector = selector;
 
         // Show image editing panel
         this.showImageEditingPanel(element, selector);
@@ -634,15 +648,17 @@ class TextEditor {
         if (!this.selectedElement || this.selectedElement.tagName !== 'IMG') return;
 
         console.log('📝 Replacing image with:', newImagePath);
+        console.log('📝 Using selector:', this.selectedElementSelector);
+        console.log('📝 For pageId:', this.currentPageId);
 
         // Update the image source
         this.selectedElement.src = newImagePath;
 
-        // Save to overlay system
-        const selector = this.generateSelector(this.selectedElement);
+        // Save to overlay system using the PRE-GENERATED selector
+        const selector = this.selectedElementSelector || this.generateSelector(this.selectedElement);
         OverlayManager.setImageOverlay(this.currentPageId, selector, newImagePath);
 
-        console.log('📝 Image replaced successfully');
+        console.log('📝 Image overlay saved:', { pageId: this.currentPageId, selector, src: newImagePath });
     }
 
     /**
@@ -735,7 +751,7 @@ class TextEditor {
     static resizeImage(direction) {
         if (!this.selectedElement || this.selectedElement.tagName !== 'IMG') return;
 
-        const scaleStep = 0.1;
+        const scaleStep = 0.02; // Smaller increments for smoother zooming
 
         // Get current transform values
         const currentTransform = this.selectedElement.style.transform || '';
@@ -745,9 +761,9 @@ class TextEditor {
         // Calculate new scale
         let newScale = currentScale;
         if (direction === 'larger') {
-            newScale = Math.min(currentScale + scaleStep, 3); // Max 3x zoom
+            newScale = Math.min(currentScale + scaleStep, 5); // Max 5x zoom
         } else if (direction === 'smaller') {
-            newScale = Math.max(currentScale - scaleStep, 0.5); // Min 0.5x zoom
+            newScale = Math.max(currentScale - scaleStep, 0.05); // Min 0.05x zoom - allows much smaller sizes
         }
 
         // Apply transform (preserve position)

@@ -101,7 +101,13 @@ export const EVENTS = {
     // Overlay System Events
     OVERLAY_CHANGED: 'overlay:changed',
     OVERLAY_CLEARED: 'overlay:cleared',
-    OVERLAY_APPLIED: 'overlay:applied'
+    OVERLAY_APPLIED: 'overlay:applied',
+
+    // Editor Mode Events
+    SET_SELECTION_MODE: 'editor:set-selection-mode',
+
+    // Container/Element Action Events
+    ACTION: 'element:action'
 };
 
 export const SELECTORS = {

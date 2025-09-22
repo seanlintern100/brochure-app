@@ -946,12 +946,14 @@ class EventManager {
             hintElement.textContent = hintTexts[mode] || 'Click highlighted elements to edit them';
         }
 
-        // Notify the appropriate editor about the mode change
+        // Emit mode change event for all editors to listen
+        EventBus.emit(EVENTS.SET_SELECTION_MODE, { mode });
+
+        // Also notify TextEditor directly for backward compatibility
         if (mode === 'text' || mode === 'images') {
             TextEditor.setMode(mode);
         } else if (mode === 'containers') {
             TextEditor.setMode(mode); // Let TextEditor know to stop handling clicks
-            // ContainerEditor will handle its own setup
         }
 
         // If ElementEditor exists, notify it too

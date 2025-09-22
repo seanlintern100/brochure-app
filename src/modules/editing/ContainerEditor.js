@@ -20,10 +20,17 @@ class ContainerEditor {
     }
 
     static setupEventListeners() {
-        // Listen for zoom modal opening to enable container selection
-        EventBus.on(EVENTS.MODAL_OPENED, (data) => {
-            if (data.modalId === 'pageZoomModal') {
-                this.setupContainerSelection(data.data?.pageId);
+        // Listen for mode switching to enable/disable container selection
+        EventBus.on(EVENTS.SET_SELECTION_MODE, (data) => {
+            if (data.mode === 'containers') {
+                // Enable container selection when entering container mode
+                setTimeout(() => {
+                    const pageId = OverlayManager.currentPageId;
+                    this.setupContainerSelection(pageId);
+                }, 100); // Small delay to ensure iframe content is ready
+            } else {
+                // Clear selection when switching to other modes
+                this.clearContainerSelection();
             }
         });
 
@@ -50,10 +57,16 @@ class ContainerEditor {
         const zoomFrame = document.getElementById('zoomFrame');
         if (!zoomFrame) return;
 
-        // Wait for iframe to load
-        zoomFrame.onload = () => {
-            const iframeDoc = zoomFrame.contentDocument;
-            if (!iframeDoc) return;
+        // Access iframe content directly (don't wait for onload since we use srcdoc)
+        const iframeDoc = zoomFrame.contentDocument || zoomFrame.contentWindow?.document;
+        if (!iframeDoc) {
+            // Try again if document not ready
+            setTimeout(() => this.setupContainerSelection(pageId), 100);
+            return;
+        }
+
+            // Clear any existing listeners first
+            this.clearContainerListeners(iframeDoc);
 
             // Select potential containers (divs, sections, articles)
             const containers = iframeDoc.querySelectorAll('div, section, article, aside, main');
@@ -66,31 +79,48 @@ class ContainerEditor {
                 // Skip header/footer (they have their own editor)
                 if (container.tagName === 'HEADER' || container.tagName === 'FOOTER') return;
 
+                // Mark container as interactive
+                container.setAttribute('data-container-editable', 'true');
                 container.style.cursor = 'pointer';
-                container.addEventListener('click', (e) => {
+
+                // Store event handlers for cleanup
+                const clickHandler = (e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     this.selectContainer(container, pageId);
-                });
+                };
 
-                // Add hover effect
-                container.addEventListener('mouseenter', () => {
+                const enterHandler = () => {
                     if (!container.classList.contains('selected-container')) {
                         container.style.outline = '2px dashed var(--color-orange)';
                         container.style.outlineOffset = '2px';
                     }
-                });
+                };
 
-                container.addEventListener('mouseleave', () => {
+                const leaveHandler = () => {
                     if (!container.classList.contains('selected-container')) {
                         container.style.outline = '';
                         container.style.outlineOffset = '';
                     }
-                });
+                };
+
+                container.addEventListener('click', clickHandler);
+                container.addEventListener('mouseenter', enterHandler);
+                container.addEventListener('mouseleave', leaveHandler);
+
+                // Store handlers for cleanup
+                container._containerHandlers = { clickHandler, enterHandler, leaveHandler };
             });
 
-            console.log(`📦 Container selection enabled for ${containers.length} containers`);
-        };
+            // Check for image containers and text containers
+            let imageContainers = 0;
+            let textContainers = 0;
+            containers.forEach(container => {
+                if (container.querySelector('img')) imageContainers++;
+                else if (container.textContent.trim().length > 0) textContainers++;
+            });
+
+            console.log(`📦 Container selection enabled: ${containers.length} total (${imageContainers} image, ${textContainers} text)`);
     }
 
     /**
@@ -274,6 +304,18 @@ class ContainerEditor {
         element.style.width = `${newWidth}px`;
         element.style.height = `${newHeight}px`;
 
+        // Check if this is an image container and resize image proportionally
+        const img = element.querySelector('img');
+        if (img) {
+            // Calculate aspect ratio
+            const aspectRatio = img.naturalWidth / img.naturalHeight;
+
+            // Set image to fill container while maintaining aspect ratio
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'contain'; // Or 'cover' depending on preference
+        }
+
         // Store in overlay
         OverlayManager.setContainerOverlay(pageId, selector, {
             width: `${newWidth}px`,
@@ -303,17 +345,41 @@ class ContainerEditor {
     }
 
     /**
+     * Clear all container event listeners
+     */
+    static clearContainerListeners(iframeDoc) {
+        const containers = iframeDoc.querySelectorAll('[data-container-editable="true"]');
+        containers.forEach(container => {
+            if (container._containerHandlers) {
+                container.removeEventListener('click', container._containerHandlers.clickHandler);
+                container.removeEventListener('mouseenter', container._containerHandlers.enterHandler);
+                container.removeEventListener('mouseleave', container._containerHandlers.leaveHandler);
+                delete container._containerHandlers;
+            }
+            container.removeAttribute('data-container-editable');
+            container.style.cursor = '';
+        });
+    }
+
+    /**
      * Clear container selection
      */
     static clearContainerSelection() {
         const zoomFrame = document.getElementById('zoomFrame');
-        if (zoomFrame && zoomFrame.contentDocument) {
-            const selectedContainers = zoomFrame.contentDocument.querySelectorAll('.selected-container');
-            selectedContainers.forEach(container => {
-                container.classList.remove('selected-container');
-                container.style.outline = '';
-                container.style.outlineOffset = '';
-            });
+        if (zoomFrame) {
+            const iframeDoc = zoomFrame.contentDocument || zoomFrame.contentWindow?.document;
+            if (iframeDoc) {
+                // Clear selections
+                const selectedContainers = iframeDoc.querySelectorAll('.selected-container');
+                selectedContainers.forEach(container => {
+                    container.classList.remove('selected-container');
+                    container.style.outline = '';
+                    container.style.outlineOffset = '';
+                });
+
+                // Clear all listeners
+                this.clearContainerListeners(iframeDoc);
+            }
         }
 
         // Hide container controls

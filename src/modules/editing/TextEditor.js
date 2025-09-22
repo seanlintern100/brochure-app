@@ -30,6 +30,7 @@ class TextEditor {
             if (data.modalId === 'pageZoomModal') {
                 this.currentPageId = data.data?.pageId;
                 this.setupElementSelection();
+                this.setupModeToggle();
 
                 // Show the sidebar panel
                 const sidebarPanel = document.getElementById('elementEditorPanel');
@@ -61,6 +62,97 @@ class TextEditor {
                 this.updateEditingPanel(data);
             }
         });
+
+        // Listen for image editing actions
+        EventBus.on(EVENTS.ACTION, (data) => {
+            if (this.currentMode === 'images' && this.selectedElement) {
+                switch (data.action) {
+                    case 'move-image':
+                        this.moveImage(data.direction);
+                        break;
+                    case 'resize-image':
+                        this.resizeImage(data.direction);
+                        break;
+                    case 'reset-image':
+                        this.resetImage();
+                        break;
+                }
+            }
+        });
+    }
+
+    /**
+     * Setup mode toggle buttons
+     */
+    static setupModeToggle() {
+        const modeButtons = document.querySelectorAll('[data-mode][data-action="set-selection-mode"]');
+
+        modeButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                const mode = button.dataset.mode;
+                this.setMode(mode);
+            });
+        });
+
+        // Enable the Images button
+        const imagesButton = document.querySelector('[data-mode="images"]');
+        if (imagesButton) {
+            imagesButton.removeAttribute('disabled');
+        }
+    }
+
+    /**
+     * Switch between Text and Image editing modes
+     */
+    static setMode(mode) {
+        console.log(`📝 Switching to ${mode} mode`);
+        this.currentMode = mode;
+
+        // Update button states
+        const modeButtons = document.querySelectorAll('[data-mode]');
+        modeButtons.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.mode === mode);
+        });
+
+        // Update hint text
+        const modeHint = document.getElementById('modeHint');
+        if (modeHint) {
+            modeHint.textContent = mode === 'text'
+                ? 'Click any text on the page to edit it'
+                : 'Click any image on the page to edit it';
+        }
+
+        // Show/hide appropriate controls
+        const textControls = document.getElementById('textEditingControls');
+        const imageControls = document.getElementById('imageControls');
+        const noSelection = document.getElementById('noElementSelected');
+
+        // Reset all controls
+        if (textControls) textControls.style.display = 'none';
+        if (imageControls) imageControls.style.display = 'none';
+        if (noSelection) noSelection.style.display = 'block';
+
+        // Update no selection message
+        const noSelectionText = noSelection?.querySelector('p');
+        const noSelectionHint = noSelection?.querySelector('span');
+        if (noSelectionText) {
+            noSelectionText.textContent = mode === 'text' ? 'Click text to edit' : 'Click image to edit';
+        }
+        if (noSelectionHint) {
+            noSelectionHint.textContent = mode === 'text'
+                ? 'Select any text element on the page'
+                : 'Select any image on the page';
+        }
+
+        // Clear any existing selections
+        const zoomFrame = document.getElementById('zoomFrame');
+        if (zoomFrame && zoomFrame.contentDocument) {
+            this.clearSelection(zoomFrame.contentDocument);
+        }
+
+        // Re-setup element selection for the new mode
+        this.setupElementSelection();
     }
 
     /**
@@ -94,7 +186,7 @@ class TextEditor {
     }
 
     /**
-     * Handle element clicks for text selection
+     * Handle element clicks for text or image selection
      */
     static handleElementClick(event, iframeDoc) {
         event.preventDefault();
@@ -102,9 +194,11 @@ class TextEditor {
 
         const element = event.target;
 
-        // Check if element is editable text
-        if (this.isTextElement(element)) {
-            this.selectElement(element, iframeDoc);
+        // Check based on current mode
+        if (this.currentMode === 'text' && this.isTextElement(element)) {
+            this.selectTextElement(element, iframeDoc);
+        } else if (this.currentMode === 'images' && element.tagName === 'IMG') {
+            this.selectImageElement(element, iframeDoc);
         }
     }
 
@@ -113,12 +207,14 @@ class TextEditor {
      */
     static handleElementHover(event, isHovering) {
         const element = event.target;
+        const isValidElement = (this.currentMode === 'text' && this.isTextElement(element)) ||
+                               (this.currentMode === 'images' && element.tagName === 'IMG');
 
-        if (this.isTextElement(element)) {
+        if (isValidElement) {
             if (isHovering) {
                 element.style.outline = '2px dashed #0A6B7C';
                 element.style.cursor = 'pointer';
-                element.title = 'Click to edit text';
+                element.title = this.currentMode === 'text' ? 'Click to edit text' : 'Click to edit image';
             } else {
                 element.style.outline = '';
                 element.style.cursor = '';
@@ -138,9 +234,9 @@ class TextEditor {
     }
 
     /**
-     * Select an element for editing
+     * Select a text element for editing
      */
-    static selectElement(element, iframeDoc) {
+    static selectTextElement(element, iframeDoc) {
         // Clear previous selection
         this.clearSelection(iframeDoc);
 
@@ -161,15 +257,51 @@ class TextEditor {
     }
 
     /**
+     * Select an image element for editing
+     */
+    static selectImageElement(element, iframeDoc) {
+        // Clear previous selection
+        this.clearSelection(iframeDoc);
+
+        // Highlight selected image
+        element.style.outline = '3px solid #E68A2E';
+        element.style.boxShadow = '0 0 10px rgba(230, 138, 46, 0.5)';
+        element.setAttribute('data-image-selected', 'true');
+
+        this.selectedElement = element;
+
+        // Generate selector for the image
+        const selector = this.generateSelector(element);
+
+        // Show image editing panel
+        this.showImageEditingPanel(element, selector);
+
+        // Load image library
+        this.loadImageLibrary();
+
+        console.log('📝 Selected image element:', selector, element.src);
+    }
+
+    /**
      * Clear all element selections
      */
     static clearSelection(iframeDoc) {
-        const selected = iframeDoc.querySelectorAll('[data-text-selected]');
-        selected.forEach(el => {
+        // Clear text selections
+        const textSelected = iframeDoc.querySelectorAll('[data-text-selected]');
+        textSelected.forEach(el => {
             el.style.outline = '';
             el.style.backgroundColor = '';
             el.removeAttribute('data-text-selected');
         });
+
+        // Clear image selections
+        const imageSelected = iframeDoc.querySelectorAll('[data-image-selected]');
+        imageSelected.forEach(el => {
+            el.style.outline = '';
+            el.style.boxShadow = '';
+            el.removeAttribute('data-image-selected');
+        });
+
         this.selectedElement = null;
     }
 
@@ -346,11 +478,190 @@ class TextEditor {
     }
 
     /**
+     * Show the image editing panel
+     */
+    static showImageEditingPanel(element, selector) {
+        console.log('📝 showImageEditingPanel called with:', { element, selector });
+
+        // Show the sidebar panel if not already visible
+        const sidebarPanel = document.getElementById('elementEditorPanel');
+        if (sidebarPanel && !sidebarPanel.classList.contains('active')) {
+            sidebarPanel.classList.add('active');
+        }
+
+        // Hide text controls and no selection, show image controls
+        const noSelection = document.getElementById('noElementSelected');
+        const textControls = document.getElementById('textEditingControls');
+        const imageControls = document.getElementById('imageControls');
+
+        if (noSelection) noSelection.style.display = 'none';
+        if (textControls) textControls.style.display = 'none';
+        if (imageControls) imageControls.style.display = 'block';
+
+        console.log('📝 Image editing panel shown');
+    }
+
+    /**
+     * Load image library into the sidebar
+     */
+    static async loadImageLibrary() {
+        const libraryContainer = document.getElementById('elementImageLibrary');
+        if (!libraryContainer) return;
+
+        try {
+            // Get image library from state
+            const StateManager = await import('../core/StateManager.js');
+            const state = StateManager.default.getState();
+            const images = state.imageLibrary || [];
+
+            // Clear existing content
+            libraryContainer.innerHTML = '';
+
+            // Add thumbnails
+            images.forEach(image => {
+                const thumb = document.createElement('div');
+                thumb.className = 'image-thumb';
+                thumb.dataset.imagePath = image.path;
+                thumb.innerHTML = `<img src="${image.thumbnail || image.path}" alt="${image.filename}">`;
+
+                // Add click handler to swap image
+                thumb.addEventListener('click', () => this.replaceImage(image.path));
+
+                libraryContainer.appendChild(thumb);
+            });
+
+            console.log(`📝 Loaded ${images.length} images into library`);
+        } catch (error) {
+            console.error('📝 Failed to load image library:', error);
+        }
+    }
+
+    /**
+     * Replace selected image with new one from library
+     */
+    static replaceImage(newImagePath) {
+        if (!this.selectedElement || this.selectedElement.tagName !== 'IMG') return;
+
+        console.log('📝 Replacing image with:', newImagePath);
+
+        // Update the image source
+        this.selectedElement.src = newImagePath;
+
+        // Save to overlay system
+        const selector = this.generateSelector(this.selectedElement);
+        OverlayManager.setImageOverlay(this.currentPageId, selector, newImagePath);
+
+        console.log('📝 Image replaced successfully');
+    }
+
+    /**
+     * Move image within container
+     */
+    static moveImage(direction) {
+        if (!this.selectedElement || this.selectedElement.tagName !== 'IMG') return;
+
+        const moveAmount = 10; // pixels
+
+        // Get current transform values or defaults
+        const currentTransform = this.selectedElement.style.transform || '';
+        const translateMatch = currentTransform.match(/translate\(([^,]+),\s*([^)]+)\)/);
+        let currentX = 0, currentY = 0;
+
+        if (translateMatch) {
+            currentX = parseFloat(translateMatch[1]) || 0;
+            currentY = parseFloat(translateMatch[2]) || 0;
+        }
+
+        // Calculate new position
+        let newX = currentX, newY = currentY;
+        switch (direction) {
+            case 'up':
+                newY -= moveAmount;
+                break;
+            case 'down':
+                newY += moveAmount;
+                break;
+            case 'left':
+                newX -= moveAmount;
+                break;
+            case 'right':
+                newX += moveAmount;
+                break;
+        }
+
+        // Apply transform
+        const scaleMatch = currentTransform.match(/scale\(([^)]+)\)/);
+        const scale = scaleMatch ? scaleMatch[1] : '1';
+        this.selectedElement.style.transform = `translate(${newX}px, ${newY}px) scale(${scale})`;
+
+        // Save to overlay
+        const selector = this.generateSelector(this.selectedElement);
+        OverlayManager.setContainerOverlay(this.currentPageId, selector, {
+            transform: this.selectedElement.style.transform
+        });
+
+        console.log(`📝 Moved image ${direction}: ${newX}px, ${newY}px`);
+    }
+
+    /**
+     * Resize image
+     */
+    static resizeImage(direction) {
+        if (!this.selectedElement || this.selectedElement.tagName !== 'IMG') return;
+
+        const scaleStep = 0.1;
+
+        // Get current transform values
+        const currentTransform = this.selectedElement.style.transform || '';
+        const scaleMatch = currentTransform.match(/scale\(([^)]+)\)/);
+        let currentScale = scaleMatch ? parseFloat(scaleMatch[1]) : 1;
+
+        // Calculate new scale
+        let newScale = currentScale;
+        if (direction === 'larger') {
+            newScale = Math.min(currentScale + scaleStep, 3); // Max 3x zoom
+        } else if (direction === 'smaller') {
+            newScale = Math.max(currentScale - scaleStep, 0.5); // Min 0.5x zoom
+        }
+
+        // Apply transform (preserve position)
+        const translateMatch = currentTransform.match(/translate\(([^,]+),\s*([^)]+)\)/);
+        const translateX = translateMatch ? translateMatch[1] : '0px';
+        const translateY = translateMatch ? translateMatch[2] : '0px';
+        this.selectedElement.style.transform = `translate(${translateX}, ${translateY}) scale(${newScale})`;
+
+        // Save to overlay
+        const selector = this.generateSelector(this.selectedElement);
+        OverlayManager.setContainerOverlay(this.currentPageId, selector, {
+            transform: this.selectedElement.style.transform
+        });
+
+        console.log(`📝 Resized image to ${newScale}x`);
+    }
+
+    /**
+     * Reset image transform
+     */
+    static resetImage() {
+        if (!this.selectedElement || this.selectedElement.tagName !== 'IMG') return;
+
+        // Clear transform
+        this.selectedElement.style.transform = '';
+
+        // Remove from overlay
+        const selector = this.generateSelector(this.selectedElement);
+        OverlayManager.removeOverlay(this.currentPageId, 'containers', selector);
+
+        console.log('📝 Reset image transform');
+    }
+
+    /**
      * Cleanup when leaving editing mode
      */
     static cleanup() {
         this.currentPageId = null;
         this.selectedElement = null;
+        this.currentMode = 'text'; // Reset to text mode
         this.hideEditingPanel();
         console.log('📝 TextEditor cleanup complete');
     }

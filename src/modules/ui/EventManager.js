@@ -990,8 +990,13 @@ class EventManager {
     }
 
     static handleCloseElementEditor(event, element) {
-        if (window.ElementEditor) {
-            window.ElementEditor.hidePanel();
+        // Hide the sidebar panel
+        const sidebarPanel = document.getElementById('elementEditorPanel');
+        const modal = document.getElementById('pageZoomModal');
+        if (sidebarPanel) {
+            sidebarPanel.classList.remove('active');
+            // Remove class from modal too
+            if (modal) modal.classList.remove('sidebar-active');
         }
     }
 

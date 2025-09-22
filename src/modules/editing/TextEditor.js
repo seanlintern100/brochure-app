@@ -13,6 +13,7 @@ class TextEditor {
     static currentPageId = null;
     static selectedElement = null;
     static editingPanel = null;
+    static currentMode = 'text'; // Track current editing mode
 
     /**
      * Initialize text editing system
@@ -29,6 +30,15 @@ class TextEditor {
             if (data.modalId === 'pageZoomModal') {
                 this.currentPageId = data.data?.pageId;
                 this.setupElementSelection();
+
+                // Show the sidebar panel
+                const sidebarPanel = document.getElementById('elementEditorPanel');
+                const modal = document.getElementById('pageZoomModal');
+                if (sidebarPanel) {
+                    sidebarPanel.classList.add('active');
+                    // Add class to modal to adjust layout
+                    if (modal) modal.classList.add('sidebar-active');
+                }
             }
         });
 
@@ -36,6 +46,12 @@ class TextEditor {
         EventBus.on(EVENTS.MODAL_CLOSED, (data) => {
             if (data.modalId === 'pageZoomModal') {
                 this.cleanup();
+
+                // Hide the sidebar panel
+                const sidebarPanel = document.getElementById('elementEditorPanel');
+                if (sidebarPanel) {
+                    sidebarPanel.classList.remove('active');
+                }
             }
         });
 
@@ -203,51 +219,17 @@ class TextEditor {
     }
 
     /**
-     * Create the text editing panel
+     * Setup text editing panel event listeners (panel now in sidebar)
      */
     static createEditingPanel() {
-        // Remove any existing panel first
-        const existingPanel = document.getElementById('textEditingPanel');
-        if (existingPanel) {
-            existingPanel.remove();
-        }
-
-        this.editingPanel = document.createElement('div');
-        this.editingPanel.id = 'textEditingPanel';
-        this.editingPanel.className = 'text-editing-panel';
-        this.editingPanel.style.cssText = `
-            position: fixed;
-            top: 100px;
-            right: 20px;
-            width: 300px;
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            padding: 16px;
-            z-index: 10000;
-            display: none;
-            font-family: 'Source Sans 3', sans-serif;
-        `;
-
-        this.editingPanel.innerHTML = `
-            <h3 style="margin: 0 0 12px 0; color: #0A6B7C; font-size: 16px;">Edit Text</h3>
-            <div id="textPreview" style="font-size: 12px; color: #666; margin-bottom: 8px; padding: 8px; background: #f9f9f9; border-radius: 4px; max-height: 60px; overflow-y: auto;"></div>
-            <textarea id="textEditor" style="width: 100%; height: 120px; border: 1px solid #ddd; border-radius: 4px; padding: 8px; font-size: 14px; resize: vertical; font-family: inherit;"></textarea>
-            <div style="margin-top: 12px; display: flex; gap: 8px;">
-                <button id="applyTextBtn" style="flex: 1; background: #0A6B7C; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px;">Apply</button>
-                <button id="cancelTextBtn" style="flex: 1; background: #ccc; color: #333; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px;">Cancel</button>
-            </div>
-        `;
-
-        document.body.appendChild(this.editingPanel);
-
-        // Hide panel initially
-        this.editingPanel.style.display = 'none';
-
-        // Add event listeners with proper cleanup
+        // The panel is now in the sidebar HTML, just add event listeners
         const applyBtn = document.getElementById('applyTextBtn');
         const cancelBtn = document.getElementById('cancelTextBtn');
+
+        if (!applyBtn || !cancelBtn) {
+            console.warn('📝 Text editing buttons not found in sidebar');
+            return;
+        }
 
         applyBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -265,10 +247,12 @@ class TextEditor {
 
         // Auto-resize textarea
         const textarea = document.getElementById('textEditor');
-        textarea.addEventListener('input', () => {
-            textarea.style.height = 'auto';
-            textarea.style.height = Math.max(120, textarea.scrollHeight) + 'px';
-        });
+        if (textarea) {
+            textarea.addEventListener('input', () => {
+                textarea.style.height = 'auto';
+                textarea.style.height = Math.max(120, textarea.scrollHeight) + 'px';
+            });
+        }
     }
 
     /**
@@ -277,29 +261,45 @@ class TextEditor {
     static showEditingPanel(element, selector) {
         console.log('📝 showEditingPanel called with:', { element, selector });
 
+        // Show the sidebar panel if not already visible
+        const sidebarPanel = document.getElementById('elementEditorPanel');
+        if (sidebarPanel && !sidebarPanel.classList.contains('active')) {
+            sidebarPanel.classList.add('active');
+        }
+
+        // Hide "no selection" state, show text editing controls
+        const noSelection = document.getElementById('noElementSelected');
+        const textControls = document.getElementById('textEditingControls');
+
+        if (noSelection) noSelection.style.display = 'none';
+        if (textControls) textControls.style.display = 'block';
+
         const preview = document.getElementById('textPreview');
         const editor = document.getElementById('textEditor');
 
         const currentText = element.textContent.trim();
         console.log('📝 Current text extracted:', `"${currentText}"`);
 
-        preview.textContent = `Element: ${selector}`;
-        editor.value = currentText;
+        if (preview) preview.textContent = `Element: ${selector}`;
+        if (editor) {
+            editor.value = currentText;
+            editor.focus();
+            editor.select();
+        }
 
-        console.log('📝 Editor value set to:', `"${editor.value}"`);
-
-        this.editingPanel.style.display = 'block';
-        editor.focus();
-        editor.select();
-
-        console.log('📝 Panel shown and editor focused');
+        console.log('📝 Sidebar panel shown and editor focused');
     }
 
     /**
      * Hide the editing panel
      */
     static hideEditingPanel() {
-        this.editingPanel.style.display = 'none';
+        // Show "no selection" state, hide text editing controls
+        const noSelection = document.getElementById('noElementSelected');
+        const textControls = document.getElementById('textEditingControls');
+
+        if (noSelection) noSelection.style.display = 'block';
+        if (textControls) textControls.style.display = 'none';
 
         // Clear selection in iframe
         const zoomFrame = document.getElementById('zoomFrame');

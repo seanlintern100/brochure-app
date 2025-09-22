@@ -505,9 +505,21 @@ img[data-editable="image"] {
     z-index: 1001;
 }
 
-/* Modal content adjustments to accommodate panel - handled via JavaScript */
+/* Modal content adjustments to accommodate panel */
 #pageZoomModal .modal-content {
-    transition: margin-right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* When sidebar is active, reduce modal width to make room */
+#pageZoomModal.sidebar-active .modal-content {
+    width: calc(95vw - 420px) !important;
+    max-width: calc(95vw - 420px) !important;
+}
+
+/* Ensure the iframe inside also adjusts */
+#pageZoomModal.sidebar-active .zoom-container {
+    width: 100%;
+    overflow: auto;
 }
 
 .zoom-container {

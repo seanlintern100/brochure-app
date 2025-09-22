@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="template-version" content="1.0">
+    <meta name="template-type" content="adjustable-a4">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Template - Starter Kit</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* 3 Big Things Brand Colors */
+            --color-teal: #0A6B7C;
+            --color-teal-dark: #045563;
+            --color-orange: #E68A2E;
+            --color-sand: #D4AE80;
+            --color-sand-light: #E8D4BC;
+            --color-warm-white: #FAF7F4;
+            --color-charcoal: #2E2E2E;
+            --color-cool-gray: #8C9A9E;
+            --color-soft-sage: #A9C1B5;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* REQUIRED: A4 Portrait Setup */
+        @page {
+            size: A4 portrait;
+            margin: 0;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Source Sans 3', -apple-system, sans-serif;
+            color: var(--color-charcoal);
+        }
+
+        /* REQUIRED: Page Setup - DO NOT CHANGE DIMENSIONS */
+        .page {
+            width: 210mm;
+            height: 297mm;
+            position: relative;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            background: white;
+        }
+
+        @media screen {
+            .page {
+                margin: 0 auto;
+                box-shadow: 0 0 50px rgba(0,0,0,0.3);
+            }
+        }
+
+        @media print {
+            .page {
+                margin: 0;
+                box-shadow: none;
+                page-break-after: always;
+                page-break-inside: avoid;
+            }
+        }
+
+        /* Zone System - Three-Zone Layout */
+        .page-header {
+            height: auto;
+            max-height: 80mm;
+            overflow: hidden;
+            flex-shrink: 0;
+            padding: 20mm;
+            padding-bottom: 10mm;
+            background: var(--color-warm-white);
+        }
+
+        .page-content {
+            flex: 1;
+            min-height: 150mm;
+            max-height: 220mm;
+            overflow: auto;
+            padding: 20mm;
+            background: white;
+        }
+
+        .page-footer {
+            height: auto;
+            min-height: 20mm;
+            max-height: 80mm;
+            overflow: hidden;
+            flex-shrink: 0;
+            padding: 10mm 20mm;
+            background: var(--color-teal);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Editable Element Styles */
+        [data-editable="text"] {
+            min-height: 1em;
+            transition: all 0.2s ease;
+        }
+
+        [data-editable="text"]:hover {
+            outline: 1px dashed rgba(230, 138, 46, 0.3);
+            outline-offset: 2px;
+            cursor: text;
+        }
+
+        [data-editable="text"]:focus {
+            outline: 2px solid var(--color-orange);
+            outline-offset: 2px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Image Editing */
+        .image-container {
+            position: relative;
+            cursor: pointer;
+            display: inline-block;
+        }
+
+        .image-container:hover .image-overlay {
+            opacity: 1;
+        }
+
+        .image-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(10, 107, 124, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .image-overlay-content {
+            color: white;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .image-input {
+            display: none;
+        }
+
+        /* Typography Styles */
+        .title-large {
+            font-family: 'Lora', serif;
+            font-size: 24pt;
+            line-height: 1.2;
+            font-weight: 700;
+            color: var(--color-teal-dark);
+            margin-bottom: 16px;
+        }
+
+        .title-medium {
+            font-family: 'Lora', serif;
+            font-size: 18pt;
+            line-height: 1.3;
+            font-weight: 600;
+            color: var(--color-teal);
+            margin-bottom: 12px;
+        }
+
+        .body-text {
+            font-size: 11pt;
+            line-height: 1.5;
+            color: var(--color-charcoal);
+            margin-bottom: 12px;
+        }
+
+        .subtitle {
+            font-size: 12pt;
+            line-height: 1.4;
+            color: var(--color-cool-gray);
+            font-weight: 500;
+        }
+
+        /* Sample Layout Components */
+        .logo {
+            width: 120px;
+            height: auto;
+        }
+
+        .content-section {
+            margin-bottom: 20mm;
+        }
+
+        .content-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .highlight-box {
+            background: var(--color-sand-light);
+            padding: 15mm;
+            border-left: 4px solid var(--color-orange);
+            margin: 10mm 0;
+        }
+
+        .two-column {
+            display: flex;
+            gap: 10mm;
+        }
+
+        .column {
+            flex: 1;
+        }
+
+        .page-number {
+            font-size: 10pt;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <!-- REQUIRED: PAGE METADATA -->
+    <div data-page-template="starter-template"
+         data-page-id="page-starter-template"
+         data-page-category="general"
+         data-page-version="1.0"
+         style="display: none;">
+        <!-- This metadata helps the assembly tool identify the page -->
+    </div>
+
+    <!-- REQUIRED: PAGE CONTENT -->
+    <div class="page" data-template="starter-template">
+
+        <!-- HEADER ZONE -->
+        <div class="page-header" data-zone="header" data-fixed-height="60mm">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <!-- Example: Company logo (locked, not editable) -->
+                    <div class="image-container" data-editable="image" data-field="companyLogo" data-aspect-ratio="3:1">
+                        <img src="https://images.squarespace-cdn.com/content/v1/625092b5c12e0f2c616eb4a3/4c771d81-e1f3-43f5-9cf1-0ede3c31dd9a/3BigThings+Rev+White+Logo.png?format=500w"
+                             alt="Company Logo"
+                             class="logo"
+                             id="company-logo">
+                        <div class="image-overlay" onclick="document.getElementById('logo-input').click()">
+                            <div class="image-overlay-content">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                                    <circle cx="12" cy="13" r="4"></circle>
+                                </svg>
+                                <div style="margin-top: 8px;">Change Logo</div>
+                            </div>
+                        </div>
+                        <input type="file" id="logo-input" class="image-input" accept="image/*" onchange="changeImage(event, 'company-logo')">
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <!-- Editable contact information -->
+                    <div class="subtitle"
+                         data-editable="text"
+                         data-field="contactInfo"
+                         data-max-chars="150"
+                         contenteditable="true">
+                        Email: hello@example.com<br>
+                        Phone: +64 21 123 4567<br>
+                        www.example.com
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTENT ZONE -->
+        <div class="page-content" data-zone="content" data-adjustable="height" data-min-height="150mm" data-max-height="220mm">
+
+            <!-- Main Title Section -->
+            <div class="content-section">
+                <h1 class="title-large"
+                    data-editable="text"
+                    data-field="mainTitle"
+                    data-max-chars="60"
+                    data-single-line="true"
+                    contenteditable="true">Your Document Title Here</h1>
+
+                <div class="subtitle"
+                     data-editable="text"
+                     data-field="subtitle"
+                     data-max-chars="100"
+                     data-single-line="true"
+                     contenteditable="true">A compelling subtitle that describes your content</div>
+            </div>
+
+            <!-- Main Content Section -->
+            <div class="content-section">
+                <h2 class="title-medium"
+                    data-editable="text"
+                    data-field="sectionTitle"
+                    data-max-chars="50"
+                    data-single-line="true"
+                    contenteditable="true">Section Heading</h2>
+
+                <div class="body-text"
+                     data-editable="text"
+                     data-field="mainContent"
+                     data-max-chars="800"
+                     data-min-lines="3"
+                     data-max-lines="12"
+                     contenteditable="true">
+                    This is the main content area where you can add your text. This area supports multiple paragraphs and will automatically wrap text. You can edit this content directly by clicking here.
+
+                    Add more paragraphs as needed to convey your message effectively. The character limit ensures the content fits well within the page layout while maintaining readability.
+                </div>
+            </div>
+
+            <!-- Two-Column Section -->
+            <div class="content-section">
+                <div class="two-column">
+                    <div class="column">
+                        <h3 class="title-medium"
+                            data-editable="text"
+                            data-field="leftColumnTitle"
+                            data-max-chars="30"
+                            data-single-line="true"
+                            contenteditable="true">Left Column</h3>
+
+                        <div class="body-text"
+                             data-editable="text"
+                             data-field="leftColumnContent"
+                             data-max-chars="300"
+                             contenteditable="true">
+                            Content for the left column. This layout allows you to present information in a structured, easy-to-read format.
+                        </div>
+                    </div>
+
+                    <div class="column">
+                        <h3 class="title-medium"
+                            data-editable="text"
+                            data-field="rightColumnTitle"
+                            data-max-chars="30"
+                            data-single-line="true"
+                            contenteditable="true">Right Column</h3>
+
+                        <div class="body-text"
+                             data-editable="text"
+                             data-field="rightColumnContent"
+                             data-max-chars="300"
+                             contenteditable="true">
+                            Content for the right column. Use this space for complementary information or additional details.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Highlight Box -->
+            <div class="content-section">
+                <div class="highlight-box">
+                    <div class="title-medium"
+                         data-editable="text"
+                         data-field="highlightTitle"
+                         data-max-chars="40"
+                         data-single-line="true"
+                         contenteditable="true">Important Information</div>
+
+                    <div class="body-text"
+                         data-editable="text"
+                         data-field="highlightContent"
+                         data-max-chars="200"
+                         contenteditable="true">
+                        Use this highlighted section to draw attention to key points, quotes, or important information that supports your main content.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Optional Image Section -->
+            <div class="content-section" data-adjustable="visibility" data-optional="true" data-field="imageSection">
+                <h3 class="title-medium"
+                    data-editable="text"
+                    data-field="imageTitle"
+                    data-max-chars="40"
+                    data-single-line="true"
+                    contenteditable="true">Visual Content</h3>
+
+                <div class="image-container"
+                     data-editable="image"
+                     data-field="mainImage"
+                     data-aspect-ratio="16:9"
+                     data-min-width="100mm"
+                     data-max-width="170mm"
+                     style="width: 100%; max-width: 170mm; margin: 10mm 0;">
+                    <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjIyNSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkNsaWNrIHRvIGFkZCBpbWFnZTwvdGV4dD4KICA8L3N2Zz4K"
+                         alt="Placeholder Image"
+                         id="main-image"
+                         style="width: 100%; height: auto; border-radius: 4px;">
+                    <div class="image-overlay" onclick="document.getElementById('main-image-input').click()">
+                        <div class="image-overlay-content">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                                <circle cx="12" cy="13" r="4"></circle>
+                            </svg>
+                            <div style="margin-top: 8px;">Click to change image</div>
+                        </div>
+                    </div>
+                    <input type="file" id="main-image-input" class="image-input" accept="image/*" onchange="changeImage(event, 'main-image')">
+                </div>
+            </div>
+
+        </div>
+
+        <!-- FOOTER ZONE -->
+        <div class="page-footer" data-zone="footer" data-adjustable="height" data-min-height="20mm" data-max-height="80mm">
+            <div data-editable="text"
+                 data-field="footerText"
+                 data-max-chars="100"
+                 contenteditable="true">© 2025 Your Company Name. All rights reserved.</div>
+            <div class="page-number" data-field="pageNumber">01</div>
+        </div>
+
+    </div>
+
+    <script>
+        // Initialize Lucide icons if available
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        // Character limit enforcement
+        document.querySelectorAll('[data-max-chars]').forEach(element => {
+            element.addEventListener('input', function() {
+                const maxChars = parseInt(this.dataset.maxChars);
+                if (this.textContent.length > maxChars) {
+                    this.textContent = this.textContent.substring(0, maxChars);
+                }
+            });
+
+            // Prevent line breaks in single-line fields
+            if (element.dataset.singleLine === 'true') {
+                element.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                    }
+                });
+            }
+        });
+
+        // Image replacement functionality
+        function changeImage(event, imageId) {
+            const file = event.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById(imageId).src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Prevent paste formatting
+        document.querySelectorAll('[contenteditable]').forEach(element => {
+            element.addEventListener('paste', function(e) {
+                e.preventDefault();
+                const text = e.clipboardData.getData('text/plain');
+                document.execCommand('insertText', false, text);
+            });
+        });
+
+        // REQUIRED: Export page data for assembly tool
+        function getPageData() {
+            const data = {
+                template: 'starter-template',
+                fields: {}
+            };
+
+            document.querySelectorAll('[data-field]').forEach(el => {
+                if (el.dataset.editable === 'text') {
+                    data.fields[el.dataset.field] = el.innerHTML;
+                } else if (el.dataset.editable === 'image') {
+                    const img = el.querySelector('img');
+                    data.fields[el.dataset.field] = img ? img.src : '';
+                } else if (el.dataset.field) {
+                    // Handle non-editable fields like page numbers
+                    data.fields[el.dataset.field] = el.textContent || el.innerHTML;
+                }
+            });
+
+            return data;
+        }
+
+        // Make function available globally for assembly tool
+        window.getPageData = getPageData;
+
+        // Optional: Template validation check
+        function validateTemplate() {
+            const requiredElements = [
+                '[data-page-template]',
+                '.page',
+                '[data-zone="content"]'
+            ];
+
+            const missing = [];
+            requiredElements.forEach(selector => {
+                if (!document.querySelector(selector)) {
+                    missing.push(selector);
+                }
+            });
+
+            if (missing.length > 0) {
+                console.warn('Template validation failed. Missing elements:', missing);
+                return false;
+            }
+
+            console.log('Template validation passed');
+            return true;
+        }
+
+        // Run validation on load
+        document.addEventListener('DOMContentLoaded', validateTemplate);
+    </script>
+</body>
+</html>

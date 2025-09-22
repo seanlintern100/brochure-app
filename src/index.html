@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brochure - 3BT Document Assembly</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Feather Icons -->
+    <script src="https://unpkg.com/feather-icons"></script>
+
+    <link rel="stylesheet" href="styles/app.css">
+    <link rel="stylesheet" href="styles/upload.css">
+    <link rel="stylesheet" href="styles/element-editor.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-logo">
+                <img src="https://images.squarespace-cdn.com/content/v1/625092b5c12e0f2c616eb4a3/00e66758-a739-4d52-b91a-d99dd80b3411/3BigThings+Rev+White+Logo+w+Strapline+copy.png" alt="3 Big Things" height="35">
+                <h1 class="header-title">Brochure</h1>
+            </div>
+
+            <div class="header-actions">
+                <button class="btn btn-primary" id="newProjectBtn" data-action="new-project">
+                    <i data-feather="plus"></i>
+                    New Project
+                </button>
+                <button class="btn btn-primary" id="openProjectBtn" data-action="open-project-dialog">
+                    <i data-feather="folder"></i>
+                    Manage Projects
+                </button>
+                <button class="btn btn-primary" id="saveProjectBtn" data-action="save-project" disabled>
+                    <i data-feather="save"></i>
+                    Save
+                </button>
+                <button class="btn btn-secondary" id="exportBtn" data-action="export-project" disabled>
+                    <i data-feather="download"></i>
+                    Export
+                </button>
+            </div>
+        </header>
+
+        <!-- Unified Sidebar -->
+        <aside class="sidebar">
+            <!-- Upload Templates Button - Always Visible -->
+            <div class="upload-template-section">
+                <button class="upload-template-btn" id="uploadTemplatesBtn" data-action="open-upload-modal">
+                    <i data-feather="upload" class="upload-icon"></i>
+                    Upload Templates
+                </button>
+            </div>
+
+            <div class="sidebar-section" data-section="projectSettings">
+                <div class="sidebar-section-header" data-section-header="projectSettings"
+                     data-action="toggle-sidebar-section" data-section-id="projectSettings">
+                    <h3 class="sidebar-title">Project Settings</h3>
+                    <button class="sidebar-toggle" data-section-toggle="projectSettings">
+                        <i data-feather="chevron-down"></i>
+                    </button>
+                </div>
+
+                <div class="sidebar-section-content" data-section-content="projectSettings">
+                    <div class="property-field">
+                        <label class="property-label">Project Name</label>
+                        <input type="text" class="property-input" id="projectName" placeholder="Enter project name" disabled>
+                    </div>
+
+                    <div class="property-field">
+                        <label class="property-label">Client</label>
+                        <input type="text" class="property-input" id="projectClient" placeholder="Client name" disabled>
+                    </div>
+
+                    <div class="property-field">
+                        <label class="property-label">Status</label>
+                        <select class="property-input" id="projectStatus" disabled>
+                            <option value="draft">Draft</option>
+                            <option value="review">Review</option>
+                            <option value="final">Final</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-section" data-section="templateLibrary">
+                <div class="sidebar-section-header" data-section-header="templateLibrary"
+                     data-action="toggle-sidebar-section" data-section-id="templateLibrary">
+                    <h3 class="sidebar-title">Template Library</h3>
+                    <button class="sidebar-toggle" data-section-toggle="templateLibrary">
+                        <i data-feather="chevron-down"></i>
+                    </button>
+                </div>
+
+                <div class="sidebar-section-content" data-section-content="templateLibrary">
+                    <div class="template-search">
+                        <input type="text"
+                               id="templateSearchInput"
+                               class="template-search-input"
+                               placeholder="Search templates..."
+                               autocomplete="off">
+                        <i data-feather="search" class="search-icon"></i>
+                    </div>
+
+                    <div class="loading" id="templatesLoading">
+                        <div class="loading-spinner"></div>
+                        <p>Loading templates...</p>
+                    </div>
+
+                    <div class="template-categories" id="templateCategories" style="display: none;">
+                        <!-- Templates will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-section" data-section="images">
+                <div class="sidebar-section-header" data-section-header="images"
+                     data-action="toggle-sidebar-section" data-section-id="images">
+                    <h3 class="sidebar-title">Images</h3>
+                    <button class="sidebar-toggle" data-section-toggle="images">
+                        <i data-feather="chevron-down"></i>
+                    </button>
+                </div>
+
+                <div class="sidebar-section-content" data-section-content="images">
+                    <div class="image-gallery" id="imageGallery">
+                        <div class="loading">
+                            <p>Image library will load here</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-section" data-section="connectionStatus">
+                <div class="sidebar-section-header" data-section-header="connectionStatus"
+                     data-action="toggle-sidebar-section" data-section-id="connectionStatus">
+                    <h3 class="sidebar-title">Connection Status</h3>
+                    <button class="sidebar-toggle" data-section-toggle="connectionStatus">
+                        <i data-feather="chevron-down"></i>
+                    </button>
+                </div>
+
+                <div class="sidebar-section-content" data-section-content="connectionStatus">
+                    <div class="connection-status" id="connectionStatus">
+                        <div class="loading-spinner"></div>
+                        <span>Checking OneDrive...</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Center - Document Canvas -->
+        <main class="canvas">
+            <div class="canvas-header" id="projectHeader">
+                <div class="canvas-header-left">
+                    <div class="document-title" id="documentTitle">New Project</div>
+                    <div class="document-info" id="documentInfo">
+                        Click "New Project" to get started
+                    </div>
+                </div>
+                <div class="canvas-header-right">
+                    <button class="btn btn-danger" id="deleteProjectBtn" data-action="delete-current-project" style="display: none;">
+                        <i data-feather="trash"></i>
+                        Delete Project
+                    </button>
+                </div>
+            </div>
+
+            <div class="project-workspace" id="projectWorkspace">
+                <div class="welcome-message">
+                    <div class="welcome-content">
+                        <h2>Welcome to Brochure</h2>
+                        <p>Create beautiful documents by assembling pages from your template library.</p>
+                        <ul>
+                            <li>Create a new project or open an existing one</li>
+                            <li>Drag template pages from the sidebar to build your document</li>
+                            <li>Edit content inline and customize each page</li>
+                            <li>Export to HTML or PDF when ready</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="page-list" id="pageList" style="display: none;">
+                <!-- Project pages will appear here -->
+            </div>
+        </main>
+
+    </div>
+
+    <!-- Modals -->
+    <div class="modal" id="newProjectModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeNewProjectModal" data-action="close-modal">&times;</button>
+            <h2>Create New Project</h2>
+            <form id="newProjectForm">
+                <div class="form-field">
+                    <label for="newProjectName">Project Name *</label>
+                    <input type="text" id="newProjectName" name="projectName" required placeholder="e.g., Tait Proposal">
+                </div>
+                <div class="form-field">
+                    <label for="newProjectClient">Client</label>
+                    <input type="text" id="newProjectClient" name="projectClient" placeholder="e.g., Tait Communications">
+                </div>
+                <div class="form-field">
+                    <label for="newProjectTemplate">Proposal Template *</label>
+                    <select id="newProjectTemplate" name="projectTemplate" required>
+                        <option value="">Choose a template...</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelNewProject" data-action="cancel-new-project">Cancel</button>
+                    <button type="submit" class="btn btn-primary" data-action="submit-new-project">Create Project</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <div class="modal" id="openProjectModal">
+        <div class="modal-content modal-grid">
+            <button class="modal-close" id="closeOpenProjectModal" data-action="close-modal">&times;</button>
+            <h2>Manage Projects</h2>
+            <div class="project-grid" id="projectGrid">
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading projects...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="pageZoomModal">
+        <div class="modal-content modal-fullscreen">
+            <button class="modal-close" id="closePageZoomModal" data-action="close-modal">&times;</button>
+            <div class="zoom-header">
+                <h2 id="zoomPageTitle">Page Editor</h2>
+                <div class="zoom-actions">
+                    <button class="btn btn-secondary" id="exportPageBtn" data-action="export-page">
+                        <i data-feather="download"></i>
+                        Export Page
+                    </button>
+                    <button class="btn btn-secondary" id="zoomSaveBtn" data-action="save-zoom-changes">Save Changes</button>
+                </div>
+            </div>
+
+            <div class="zoom-container">
+                <div class="zoom-frame" id="zoomFrame">
+                    <!-- Page content will load here -->
+                </div>
+            </div>
+
+            <!-- Element Editor Panel -->
+            <div class="element-editor-panel" id="elementEditorPanel">
+                    <div class="element-editor-header">
+                        <h3 id="elementEditorTitle">
+                            <i data-feather="edit-3"></i>
+                            Element Editor
+                        </h3>
+                        <button class="element-editor-close" id="closeElementEditor" data-action="close-element-editor" type="button">
+                            <i data-feather="x"></i>
+                        </button>
+                    </div>
+
+                    <!-- Selection Mode Selector -->
+                    <div class="selection-mode-selector" id="selectionModeSelector">
+                        <h4>Select Elements</h4>
+                        <div class="mode-buttons">
+                            <button class="mode-btn active" data-mode="content" data-action="set-selection-mode">
+                                <i data-feather="edit-3"></i>
+                                <span>Content</span>
+                            </button>
+                            <button class="mode-btn" data-mode="containers" data-action="set-selection-mode">
+                                <i data-feather="square"></i>
+                                <span>Containers</span>
+                            </button>
+                            <button class="mode-btn" data-mode="headers-footers" data-action="set-selection-mode">
+                                <i data-feather="layout"></i>
+                                <span>Headers/Footers</span>
+                            </button>
+                        </div>
+                        <p class="mode-hint" id="modeHint">Click highlighted elements on the page to edit them</p>
+                    </div>
+
+                    <div class="element-editor-content" id="elementEditorContent">
+                        <!-- Dynamic content based on selected element type -->
+                        <div class="no-selection" id="noElementSelected">
+                            <div class="no-selection-content">
+                                <i data-feather="mouse-pointer"></i>
+                                <p>Click an element to edit</p>
+                                <span>Select images or sections to access editing controls</span>
+                            </div>
+                        </div>
+
+                        <!-- Image Controls -->
+                        <div class="element-controls image-controls" id="imageControls" style="display: none;">
+                            <div class="control-section">
+                                <h4>Replace Image</h4>
+                                <div class="image-library-grid" id="elementImageLibrary">
+                                    <!-- Image thumbnails will load here -->
+                                </div>
+                            </div>
+
+                            <div class="control-section">
+                                <h4>Position & Size</h4>
+                                <div class="transform-controls">
+                                    <div class="control-group">
+                                        <label>Position</label>
+                                        <div class="position-controls">
+                                            <button class="control-btn" data-action="move-image" data-direction="up">
+                                                <i data-feather="arrow-up"></i>
+                                            </button>
+                                            <button class="control-btn" data-action="move-image" data-direction="down">
+                                                <i data-feather="arrow-down"></i>
+                                            </button>
+                                            <button class="control-btn" data-action="move-image" data-direction="left">
+                                                <i data-feather="arrow-left"></i>
+                                            </button>
+                                            <button class="control-btn" data-action="move-image" data-direction="right">
+                                                <i data-feather="arrow-right"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="control-group">
+                                        <label>Size</label>
+                                        <div class="size-controls">
+                                            <button class="control-btn" data-action="resize-image" data-direction="larger">
+                                                <i data-feather="zoom-in"></i>
+                                            </button>
+                                            <button class="control-btn" data-action="resize-image" data-direction="smaller">
+                                                <i data-feather="zoom-out"></i>
+                                            </button>
+                                            <button class="control-btn" data-action="reset-image">
+                                                <i data-feather="refresh-cw"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section Controls -->
+                        <div class="element-controls section-controls" id="sectionControls" style="display: none;">
+                            <div class="control-section">
+                                <h4>Section Height</h4>
+                                <div class="height-controls">
+                                    <button class="control-btn" data-action="extend-section">
+                                        <i data-feather="plus"></i>
+                                        Extend
+                                    </button>
+                                    <button class="control-btn" data-action="shrink-section">
+                                        <i data-feather="minus"></i>
+                                        Shrink
+                                    </button>
+                                    <button class="control-btn" data-action="reset-section-height">
+                                        <i data-feather="refresh-cw"></i>
+                                        Reset
+                                    </button>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Container Controls -->
+                        <div class="element-controls container-controls" id="containerControls" style="display: none;">
+                            <div class="control-section">
+                                <h4>Container Position</h4>
+                                <div class="position-controls">
+                                    <button class="control-btn" data-action="move-container" data-direction="up">
+                                        <i data-feather="arrow-up"></i>
+                                    </button>
+                                    <div class="position-row">
+                                        <button class="control-btn" data-action="move-container" data-direction="left">
+                                            <i data-feather="arrow-left"></i>
+                                        </button>
+                                        <button class="control-btn" data-action="move-container" data-direction="right">
+                                            <i data-feather="arrow-right"></i>
+                                        </button>
+                                    </div>
+                                    <button class="control-btn" data-action="move-container" data-direction="down">
+                                        <i data-feather="arrow-down"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="control-section">
+                                <h4>Container Size</h4>
+                                <div class="size-controls">
+                                    <button class="control-btn" data-action="resize-container" data-direction="wider">
+                                        <i data-feather="maximize-2"></i>
+                                        Wider
+                                    </button>
+                                    <button class="control-btn" data-action="resize-container" data-direction="narrower">
+                                        <i data-feather="minimize-2"></i>
+                                        Narrower
+                                    </button>
+                                    <button class="control-btn" data-action="resize-container" data-direction="taller">
+                                        <i data-feather="chevrons-up"></i>
+                                        Taller
+                                    </button>
+                                    <button class="control-btn" data-action="resize-container" data-direction="shorter">
+                                        <i data-feather="chevrons-down"></i>
+                                        Shorter
+                                    </button>
+                                    <button class="control-btn" data-action="reset-container">
+                                        <i data-feather="refresh-cw"></i>
+                                        Reset
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Templates Modal -->
+    <div class="modal" id="uploadTemplatesModal">
+        <div class="modal-content modal-large" style="max-width: 45% !important; width: 40% !important;">
+            <button class="modal-close" id="closeUploadModal" data-action="close-modal">&times;</button>
+            <div id="uploadModalContent">
+                <!-- Content will be dynamically rendered by UploadModalManager -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Messages -->
+    <div class="status-message" id="statusMessage"></div>
+
+    <script type="module" src="renderer.js"></script>
+</body>
+</html>

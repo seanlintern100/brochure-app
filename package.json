@@ -1,0 +1,66 @@
+{
+  "name": "brochure",
+  "version": "1.0.0",
+  "description": "3 Big Things Document Assembly Tool - Desktop application for seamless document assembly from modular page templates",
+  "main": "main.js",
+  "author": "3 Big Things",
+  "license": "MIT",
+  "homepage": ".",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "build-mac": "electron-builder --mac",
+    "pack": "electron-builder --dir",
+    "dist": "npm run build"
+  },
+  "keywords": [
+    "document-assembly",
+    "templates",
+    "pdf-generation",
+    "desktop-app",
+    "3bigthings"
+  ],
+  "dependencies": {
+    "electron": "^27.0.0",
+    "sqlite3": "^5.1.6",
+    "puppeteer": "^21.0.0",
+    "csv-parse": "^5.5.0",
+    "chokidar": "^3.5.3"
+  },
+  "devDependencies": {
+    "electron-builder": "^24.0.0"
+  },
+  "build": {
+    "appId": "com.3bigthings.brochure",
+    "productName": "Brochure",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+      "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
+      "!**/node_modules/*.d.ts",
+      "!**/node_modules/.bin",
+      "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}",
+      "!.editorconfig",
+      "!**/._*",
+      "!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}",
+      "!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}",
+      "!**/{appveyor.yml,.travis.yml,circle.yml}",
+      "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
+    ],
+    "mac": {
+      "icon": "assets/icon.png",
+      "target": "dmg",
+      "category": "public.app-category.productivity"
+    },
+    "dmg": {
+      "title": "Brochure - 3BT Document Assembly"
+    }
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

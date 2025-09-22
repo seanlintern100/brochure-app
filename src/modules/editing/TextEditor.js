@@ -521,11 +521,11 @@ class TextEditor {
             images.forEach(image => {
                 const thumb = document.createElement('div');
                 thumb.className = 'image-thumb';
-                thumb.dataset.imagePath = image.path;
-                thumb.innerHTML = `<img src="${image.thumbnail || image.path}" alt="${image.filename}">`;
+                thumb.dataset.imagePath = image.url;
+                thumb.innerHTML = `<img src="${image.url}" alt="${image.filename || image.description || 'Image'}">`;
 
                 // Add click handler to swap image
-                thumb.addEventListener('click', () => this.replaceImage(image.path));
+                thumb.addEventListener('click', () => this.replaceImage(image.url));
 
                 libraryContainer.appendChild(thumb);
             });

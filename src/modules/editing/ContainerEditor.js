@@ -263,12 +263,18 @@ class ContainerEditor {
                 break;
         }
 
-        // Apply transform
+        // Apply transform - only move the container, not its contents
         const newTransform = `translate(${newX}px, ${newY}px)`;
         element.style.transform = newTransform;
 
+        // Preserve transform origin to prevent content shifting
+        element.style.transformOrigin = '0 0';
+
         // Store in overlay
-        OverlayManager.setContainerOverlay(pageId, selector, { transform: newTransform });
+        OverlayManager.setContainerOverlay(pageId, selector, {
+            transform: newTransform,
+            transformOrigin: '0 0'
+        });
 
         console.log(`📦 Moved container ${direction}:`, { selector, transform: newTransform });
     }
@@ -300,29 +306,43 @@ class ContainerEditor {
                 break;
         }
 
-        // Apply new dimensions
+        // Apply new dimensions to container only
         element.style.width = `${newWidth}px`;
         element.style.height = `${newHeight}px`;
 
-        // Check if this is an image container and resize image proportionally
-        const img = element.querySelector('img');
-        if (img) {
-            // Calculate aspect ratio
-            const aspectRatio = img.naturalWidth / img.naturalHeight;
+        // Check container type and handle children accordingly
+        const hasImage = element.querySelector('img');
+        const hasText = element.textContent.trim().length > 0 && !hasImage;
 
-            // Set image to fill container while maintaining aspect ratio
-            img.style.width = '100%';
-            img.style.height = '100%';
-            img.style.objectFit = 'contain'; // Or 'cover' depending on preference
+        if (hasImage) {
+            // For image containers, don't modify the image itself
+            // The image should maintain its own styling/positioning
+            // Just ensure container has proper overflow handling
+            element.style.overflow = 'hidden';
+            element.style.position = element.style.position || 'relative';
+        } else if (hasText) {
+            // For text containers, ensure text reflows naturally
+            // Text size stays the same, just reflows within new container bounds
+            element.style.overflow = 'auto';
+        } else {
+            // For generic containers
+            element.style.overflow = 'visible';
         }
 
-        // Store in overlay
+        // Store container-only changes in overlay
         OverlayManager.setContainerOverlay(pageId, selector, {
             width: `${newWidth}px`,
-            height: `${newHeight}px`
+            height: `${newHeight}px`,
+            overflow: hasImage ? 'hidden' : (hasText ? 'auto' : 'visible'),
+            position: element.style.position || 'relative'
         });
 
-        console.log(`📦 Resized container ${direction}:`, { selector, width: newWidth, height: newHeight });
+        console.log(`📦 Resized container ${direction}:`, {
+            selector,
+            width: newWidth,
+            height: newHeight,
+            type: hasImage ? 'image-container' : (hasText ? 'text-container' : 'generic-container')
+        });
     }
 
     /**

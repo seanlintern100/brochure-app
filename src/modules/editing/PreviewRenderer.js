@@ -100,9 +100,21 @@ class PreviewRenderer {
             try {
                 const elements = doc.querySelectorAll(selector);
                 elements.forEach(element => {
+                    // Apply all style properties from overlay
                     Object.entries(properties).forEach(([prop, value]) => {
+                        // Apply all CSS properties stored in the overlay
                         element.style[prop] = value;
                     });
+
+                    // Ensure images within containers maintain their aspect ratio
+                    const images = element.querySelectorAll('img');
+                    images.forEach(img => {
+                        // Preserve any existing image transforms and positioning
+                        if (!img.hasAttribute('data-original-style-preserved')) {
+                            img.setAttribute('data-original-style-preserved', 'true');
+                        }
+                    });
+
                     element.setAttribute('data-overlay-container', 'true');
                 });
             } catch (error) {

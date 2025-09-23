@@ -654,7 +654,7 @@ class EventManager {
         }
     }
 
-    static handleSaveZoomChanges(event, element) {
+    static async handleSaveZoomChanges(event, element) {
         try {
             if (!ModalManager.currentZoomPage) {
                 throw new Error('No page to save');
@@ -691,7 +691,9 @@ class EventManager {
                     overlayData: overlayData[pageId]
                 });
 
-                console.log('💾 Successfully saved overlay data');
+                // Save project to disk immediately (don't wait for AutoSave)
+                await ProjectManager.saveProject(currentProject);
+                console.log('💾 Successfully saved overlay data to disk');
             }
 
             // Close modal and show success

@@ -241,15 +241,45 @@ class SectionEditor {
      * Adjust section height by specified amount
      */
     static adjustSectionHeight(pageId, selector, element, heightChange) {
-        // Get current height
-        const currentHeight = parseFloat(getComputedStyle(element).height);
-        const newHeight = Math.max(20, currentHeight + heightChange);
+        // Get current height and computed styles
+        const computedStyle = getComputedStyle(element);
+        const currentHeight = parseFloat(computedStyle.height);
+        const position = computedStyle.position;
+        const bottom = computedStyle.bottom;
+
+        // Get page container for max height constraint
+        const pageContainer = element.closest('.unified-page, .page, [data-page-id]');
+        const pageHeight = pageContainer ? pageContainer.offsetHeight : 800;
+
+        // Set reasonable max height (40% of page for headers/footers)
+        const maxAllowedHeight = pageHeight * 0.4;
+
+        // Calculate new height with constraints
+        const newHeight = Math.min(maxAllowedHeight, Math.max(20, currentHeight + heightChange));
+
+        // Check if this is a footer (positioned at bottom)
+        const isFooter = element.tagName === 'FOOTER' ||
+                        (position === 'absolute' && bottom === '0px') ||
+                        (position === 'fixed' && bottom === '0px');
 
         // Apply new height
         element.style.height = `${newHeight}px`;
 
+        // For footers positioned at bottom, adjust positioning to prevent upward overflow
+        if (isFooter && position === 'absolute' && newHeight > currentHeight) {
+            // Keep footer anchored but ensure it doesn't overflow page top
+            const elementTop = element.offsetTop;
+            if (elementTop < 0 || (pageContainer && elementTop < pageContainer.offsetTop)) {
+                // Footer is growing too tall, constrain it
+                element.style.height = `${currentHeight}px`; // Revert height
+                console.log('📏 Footer height limited to prevent overflow');
+                return;
+            }
+        }
+
         // Store in overlay
-        OverlayManager.setSectionOverlay(pageId, selector, { height: `${newHeight}px` });
+        const overlayData = { height: `${newHeight}px` };
+        OverlayManager.setSectionOverlay(pageId, selector, overlayData);
 
         // Update UI info
         this.updateSectionInfo(element);
@@ -258,6 +288,8 @@ class SectionEditor {
             selector,
             oldHeight: currentHeight,
             newHeight,
+            isFooter,
+            maxAllowed: maxAllowedHeight,
             change: heightChange
         });
     }

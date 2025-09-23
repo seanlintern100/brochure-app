@@ -127,8 +127,8 @@ class ContainerEditor {
      * Select a container for editing
      */
     static selectContainer(containerElement, pageId) {
-        // Clear previous selections
-        this.clearContainerSelection();
+        // Clear only the previous selection, not all listeners
+        this.clearPreviousSelection();
 
         // Mark as selected
         containerElement.classList.add('selected-container');

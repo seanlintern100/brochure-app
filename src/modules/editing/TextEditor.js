@@ -32,12 +32,24 @@ class TextEditor {
      */
     static setMode(mode) {
         console.log('📝 TextEditor mode changing from', this.currentMode, 'to', mode);
-        this.currentMode = mode;
 
-        // Clear any existing selection when mode changes
-        if (this.selectedElement) {
-            this.hideEditingPanel();
-            this.selectedElement = null;
+        // Only clear selection if actually changing to a different mode
+        if (this.currentMode !== mode) {
+            this.currentMode = mode;
+
+            // Clear selection only if the element type doesn't match the new mode
+            if (this.selectedElement) {
+                const isTextElement = this.isTextElement(this.selectedElement);
+                const isImageElement = this.selectedElement.tagName === 'IMG';
+
+                // Clear if mode doesn't match element type
+                if ((mode === 'text' && !isTextElement) ||
+                    (mode === 'images' && !isImageElement) ||
+                    (mode === 'containers')) {
+                    this.hideEditingPanel();
+                    this.selectedElement = null;
+                }
+            }
         }
     }
 
@@ -179,10 +191,20 @@ class TextEditor {
         const zoomFrame = document.getElementById('zoomFrame');
         if (!zoomFrame) return;
 
-        // Wait for iframe to load
-        zoomFrame.onload = () => {
+        // Function to attach listeners
+        const attachListeners = () => {
             const iframeDoc = zoomFrame.contentDocument;
-            if (!iframeDoc) return;
+            if (!iframeDoc) {
+                // Try again after a short delay if document not ready
+                setTimeout(attachListeners, 100);
+                return;
+            }
+
+            // Check if listeners already attached to avoid duplicates
+            if (iframeDoc._textEditorListenersAttached) {
+                console.log('📝 TextEditor: Listeners already attached');
+                return;
+            }
 
             console.log('📝 Setting up text element selection');
 
@@ -199,7 +221,13 @@ class TextEditor {
             iframeDoc.addEventListener('mouseout', (e) => {
                 this.handleElementHover(e, false);
             });
+
+            // Mark that listeners are attached
+            iframeDoc._textEditorListenersAttached = true;
         };
+
+        // For srcdoc, we don't get onload reliably, so just try immediately
+        attachListeners();
     }
 
     /**

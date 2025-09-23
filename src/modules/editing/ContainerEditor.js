@@ -127,8 +127,22 @@ class ContainerEditor {
      * Select a container for editing
      */
     static selectContainer(containerElement, pageId) {
-        // Clear only the previous selection, not all listeners
-        this.clearPreviousSelection();
+        // Clear only the visual selection, not the event listeners
+        const zoomFrame = document.getElementById('zoomFrame');
+        if (zoomFrame) {
+            const iframeDoc = zoomFrame.contentDocument || zoomFrame.contentWindow?.document;
+            if (iframeDoc) {
+                // Only clear selected container's visual state
+                const previouslySelected = iframeDoc.querySelectorAll('.selected-container');
+                previouslySelected.forEach(container => {
+                    if (container !== containerElement) {
+                        container.classList.remove('selected-container');
+                        container.style.outline = '';
+                        container.style.outlineOffset = '';
+                    }
+                });
+            }
+        }
 
         // Mark as selected
         containerElement.classList.add('selected-container');
